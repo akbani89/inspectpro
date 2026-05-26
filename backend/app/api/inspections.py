@@ -18,7 +18,7 @@ class InspectionCreateRequest(BaseModel):
     insurer_name: Optional[str]
     branch_name: Optional[str]
     underwriter_name: Optional[str]
-    request_date: Optional[datetime]
+    request_date: Optional[datetime] = None
     insured_name: Optional[str]
     insured_contact: Optional[str]
     insured_address: Optional[str]
@@ -28,13 +28,13 @@ class InspectionCreateRequest(BaseModel):
     make: Optional[str]
     model_variant: Optional[str]
     engine_cc: Optional[str]
-    registration_no: Optional[str]
-    registration_year: Optional[int]
-    manufacturing_year: Optional[int]
+    registration_no: Optional[str] 
+    registration_year: Optional[int] = None
+    manufacturing_year: Optional[int] = None
     engine_no: Optional[str]
     chassis_no: Optional[str]
     color: Optional[str]
-    odometer_reading: Optional[int]
+    odometer_reading: Optional[int] = None
     body_type: Optional[str]
     usage_type: Optional[str] = "Private"
     assembly: Optional[str] = "Local Assembled"
@@ -49,7 +49,7 @@ class InspectionCreateRequest(BaseModel):
     missing_items: Optional[str]
     alterations: Optional[str]
     # Valuation
-    market_value: Optional[float]
+    market_value: Optional[float] = None
     additional_accessories_value: Optional[float] = 0
     # Meta
     inspection_place: Optional[str]
