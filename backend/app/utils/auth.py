@@ -1,4 +1,4 @@
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
@@ -10,18 +10,17 @@ import os
 
 SECRET_KEY = os.getenv("SECRET_KEY", "change-this-in-production-use-long-random-string")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 24 * 7  # 7 days for mobile
+ACCESS_TOKEN_EXPIRE_HOURS = 24 * 7
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def create_token(data: dict, expires_delta: timedelta = None) -> str:
