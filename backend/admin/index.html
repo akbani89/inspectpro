@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>InspectPro — Admin Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary:#1a56db; --primary-lt:#eff4ff; --success:#16a34a; --warning:#d97706;
+    --danger:#dc2626; --accent:#0ea5e9; --bg:#f8fafc; --surface:#ffffff;
+    --border:#e2e8f0; --text:#0f172a; --text-mid:#475569; --text-lt:#94a3b8;
+    --sidebar-w:240px; --radius:10px;
+  }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); font-size:14px; }
+  #app { display:flex; min-height:100vh; }
+  aside { width:var(--sidebar-w); background:var(--text); color:#fff; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:100; }
+  .sidebar-logo { padding:24px 20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; gap:12px; }
+  .sidebar-logo .logo-mark { width:36px; height:36px; background:var(--primary); border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  .sidebar-logo .logo-name { font-size:18px; font-weight:700; }
+  .sidebar-logo .logo-tag { font-size:10px; color:rgba(255,255,255,0.5); margin-top:1px; }
+  nav { flex:1; padding:16px 12px; }
+  .nav-section { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,0.4); margin:16px 8px 6px; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; color:rgba(255,255,255,0.7); font-weight:500; transition:all .15s; margin-bottom:2px; }
+  .nav-item:hover { background:rgba(255,255,255,0.08); color:#fff; }
+  .nav-item.active { background:var(--primary); color:#fff; }
+  .nav-item .icon { font-size:16px; width:20px; text-align:center; }
+  .sidebar-footer { padding:16px; border-top:1px solid rgba(255,255,255,0.1); }
+  .user-info { display:flex; align-items:center; gap:10px; }
+  .user-avatar { width:34px; height:34px; border-radius:17px; background:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0; }
+  .user-name { font-size:13px; font-weight:600; }
+  .user-role { font-size:10px; color:rgba(255,255,255,0.5); }
+  .logout-btn { margin-top:10px; width:100%; padding:8px; border-radius:6px; background:rgba(255,255,255,0.08); border:none; color:rgba(255,255,255,0.6); cursor:pointer; font-family:inherit; font-size:13px; }
+  .logout-btn:hover { background:rgba(220,38,38,0.3); color:#fff; }
+  main { margin-left:var(--sidebar-w); flex:1; padding:32px; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; }
+  .topbar h1 { font-size:26px; font-weight:700; letter-spacing:-0.5px; }
+  .topbar .sub { font-size:13px; color:var(--text-mid); margin-top:2px; }
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .15s; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover { background:#1340b0; }
+  .btn-outline { background:var(--surface); color:var(--text); border:1.5px solid var(--border); }
+  .btn-outline:hover { border-color:var(--primary); color:var(--primary); }
+  .btn-danger { background:#fee2e2; color:var(--danger); }
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+  .stat-card { background:var(--surface); border-radius:var(--radius); padding:20px; border:1px solid var(--border); position:relative; overflow:hidden; }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--accent-color,var(--primary)); }
+  .stat-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:12px; }
+  .stat-value { font-size:28px; font-weight:700; letter-spacing:-1px; }
+  .stat-label { font-size:12px; color:var(--text-mid); margin-top:3px; }
+  .card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; margin-bottom:24px; }
+  .card-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .card-title { font-size:15px; font-weight:700; }
+  table { width:100%; border-collapse:collapse; }
+  th { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-mid); padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); background:var(--bg); }
+  td { padding:12px 16px; border-bottom:1px solid var(--bg); font-size:13px; vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--bg); }
+  .badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+  .badge-draft { background:#f1f5f9; color:#475569; }
+  .badge-submitted { background:#dbeafe; color:#1e40af; }
+  .badge-approved { background:#dcfce7; color:#166534; }
+  .badge-rejected { background:#fee2e2; color:#991b1b; }
+  .badge-active { background:#dcfce7; color:#166534; }
+  .badge-inactive { background:#fee2e2; color:#991b1b; }
+  .filters { display:flex; gap:10px; padding:14px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .search-input { flex:1; min-width:200px; padding:8px 12px 8px 34px; border-radius:8px; border:1.5px solid var(--border); font-family:inherit; font-size:13px; background:var(--bg); outline:none; }
+  .search-input:focus { border-color:var(--primary); }
+  select { padding:8px 12px; border-radius:8px; border:1.5px solid var(--border); font-family:inherit; font-size:13px; background:var(--bg); outline:none; cursor:pointer; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:999; padding:20px; }
+  .modal { background:var(--surface); border-radius:14px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
+  .modal-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .modal-title { font-size:18px; font-weight:700; }
+  .modal-close { background:none; border:none; font-size:22px; cursor:pointer; color:var(--text-mid); line-height:1; }
+  .modal-body { padding:24px; }
+  .modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+  label { display:block; font-size:12px; font-weight:600; color:var(--text-mid); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; margin-top:14px; }
+  label:first-child { margin-top:0; }
+  input[type=text],input[type=email],input[type=password],input[type=tel],input[type=number],textarea { width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid var(--border); font-family:inherit; font-size:14px; outline:none; background:var(--bg); }
+  input:focus,textarea:focus { border-color:var(--primary); }
+  textarea { height:80px; resize:vertical; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .loading { text-align:center; padding:48px; color:var(--text-mid); }
+  .spinner { display:inline-block; width:28px; height:28px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; margin-bottom:12px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #login-page { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+  .login-card { background:var(--surface); border-radius:16px; padding:40px; width:380px; box-shadow:0 4px 24px rgba(0,0,0,0.08); border:1px solid var(--border); }
+  .login-logo { text-align:center; margin-bottom:28px; }
+  .login-logo .mark { width:56px; height:56px; background:var(--primary); border-radius:14px; display:inline-flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#fff; margin-bottom:12px; }
+  .login-logo h1 { font-size:22px; font-weight:700; }
+  .login-logo p { font-size:13px; color:var(--text-mid); margin-top:4px; }
+  .login-btn { width:100%; padding:12px; margin-top:20px; }
+  .error-msg { background:#fee2e2; color:var(--danger); padding:10px 14px; border-radius:8px; font-size:13px; margin-top:12px; }
+  .mono { font-family:'DM Mono',monospace; font-size:12px; }
+  .text-mid { color:var(--text-mid); }
+  .text-sm { font-size:12px; }
+  .fw7 { font-weight:700; }
+  .actions-cell { display:flex; gap:6px; }
+  .icon-btn { background:none; border:none; cursor:pointer; padding:4px 6px; border-radius:6px; font-size:14px; transition:background .1s; }
+  .icon-btn:hover { background:var(--bg); }
+</style>
+</head>
+<body>
+
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="mark">IP</div>
+      <h1>InspectPro</h1>
+      <p>Admin Dashboard</p>
+    </div>
+    <label>Email address</label>
+    <input type="email" id="l-email" placeholder="admin@company.com" />
+    <label>Password</label>
+    <input type="password" id="l-password" placeholder="••••••••" />
+    <button class="btn btn-primary login-btn" onclick="doLogin()">Sign in</button>
+    <div id="login-error" style="display:none" class="error-msg"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <aside>
+    <div class="sidebar-logo">
+      <div class="logo-mark">IP</div>
+      <div><div class="logo-name">InspectPro</div><div class="logo-tag">Admin Dashboard</div></div>
+    </div>
+    <nav>
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">🏠</span> Dashboard</div>
+      <div class="nav-item" onclick="showPage('inspections')"><span class="icon">📋</span> Inspections</div>
+      <div class="nav-item" onclick="showPage('agents')"><span class="icon">👤</span> Agents</div>
+      <div class="nav-section">Settings</div>
+      <div class="nav-item" onclick="showPage('company')"><span class="icon">🏢</span> Company</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="nav-avatar">?</div>
+        <div><div class="user-name" id="nav-name">—</div><div class="user-role" id="nav-role">—</div></div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">🚪 Sign out</button>
+    </div>
+  </aside>
+
+  <main>
+    <div id="page-dashboard" class="page active">
+      <div class="topbar">
+        <div><h1>Dashboard</h1><div class="sub" id="dash-greeting">Welcome back</div></div>
+        <button class="btn btn-primary" onclick="showPage('inspections')">View All Inspections</button>
+      </div>
+      <div class="stats-grid" id="stats-grid"><div class="loading"><div class="spinner"></div><br>Loading…</div></div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent Inspections</span></div>
+        <table>
+          <thead><tr><th>Insured</th><th>Registration</th><th>Make</th><th>Agent</th><th>Status</th><th>Date</th><th></th></tr></thead>
+          <tbody id="recent-tbody"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="page-inspections" class="page">
+      <div class="topbar">
+        <div><h1>Inspections</h1><div class="sub" id="insp-count">—</div></div>
+      </div>
+      <div class="card">
+        <div class="filters">
+          <input type="text" class="search-input" id="insp-search" placeholder="Search by name, reg no…" oninput="debounceSearch()" />
+          <select id="insp-status" onchange="loadInspections()">
+            <option value="">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="submitted">Submitted</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr><th>Report No.</th><th>Insured</th><th>Reg. No.</th><th>Make</th><th>Value (PKR)</th><th>Agent</th><th>Status</th><th>Date</th><th></th></tr></thead>
+          <tbody id="insp-tbody"><tr><td colspan="9" class="loading"><div class="spinner"></div></td></tr></tbody>
+        </table>
+        <div id="insp-pagination" style="padding:14px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text-mid)"></div>
+      </div>
+    </div>
+
+    <div id="page-agents" class="page">
+      <div class="topbar">
+        <div><h1>Field Agents</h1><div class="sub">Manage your inspection team</div></div>
+        <button class="btn btn-primary" onclick="openNewAgentModal()">+ Add Agent</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Inspections</th><th>Last Login</th><th>Status</th><th></th></tr></thead>
+          <tbody id="agents-tbody"><tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="page-company" class="page">
+      <div class="topbar">
+        <div><h1>Company Settings</h1><div class="sub">Branding &amp; configuration</div></div>
+        <button class="btn btn-primary" onclick="saveCompany()">Save Changes</button>
+      </div>
+      <div class="card" style="max-width:600px">
+        <div class="card-header"><span class="card-title">Company Details</span></div>
+        <div style="padding:24px">
+          <label>Company Name</label><input type="text" id="co-name" />
+          <label>Phone</label><input type="tel" id="co-phone" />
+          <label>Address</label><textarea id="co-address"></textarea>
+          <label>PDF Report Brand Color (hex)</label><input type="text" id="co-color" placeholder="#1a56db" />
+          <label>PDF Footer Text</label><textarea id="co-footer"></textarea>
+          <div id="co-msg" style="margin-top:14px;display:none"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="new-agent-modal" style="display:none" onclick="if(event.target===this)closeModal('new-agent-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add New Agent</span>
+      <button class="modal-close" onclick="closeModal('new-agent-modal')">x</button>
+    </div>
+    <div class="modal-body">
+      <label>Full Name</label><input type="text" id="ag-name" placeholder="Muhammad Ali" />
+      <label>Email</label><input type="email" id="ag-email" placeholder="agent@company.com" />
+      <label>Temporary Password</label><input type="password" id="ag-pw" placeholder="min 8 chars" />
+      <label>Phone</label><input type="tel" id="ag-phone" placeholder="0300-1234567" />
+      <label>CNIC</label><input type="text" id="ag-cnic" placeholder="XXXXX-XXXXXXX-X" />
+      <div id="ag-error" style="display:none;margin-top:12px" class="error-msg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('new-agent-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createAgent()">Create Agent</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="insp-modal" style="display:none" onclick="if(event.target===this)closeModal('insp-modal')">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title" id="insp-modal-title">Inspection</span>
+      <button class="modal-close" onclick="closeModal('insp-modal')">x</button>
+    </div>
+    <div class="modal-body" id="insp-modal-body">Loading...</div>
+    <div class="modal-footer" id="insp-modal-footer"></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://inspectpro-api.fly.dev/api';
+let token = localStorage.getItem('ip_token');
+let currentUser = null;
+let inspSkip = 0;
+const INSP_LIMIT = 25;
+let searchTimer = null;
+
+function setAuthHeader() {
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
+  } else {
+    delete axios.defaults.headers.common['Authorization'];
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pw = document.getElementById('l-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  try {
+    const form = new URLSearchParams({ username: email, password: pw });
+    const res = await axios.post(API + '/auth/login', form, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    token = res.data.access_token;
+    localStorage.setItem('ip_token', token);
+    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
+    await initApp();
+  } catch(e) {
+    errEl.textContent = 'Invalid email or password.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  token = null;
+  localStorage.removeItem('ip_token');
+  delete axios.defaults.headers.common['Authorization'];
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+async function initApp() {
+  try {
+    const res = await axios.get(API + '/auth/me');
+    currentUser = res.data;
+    document.getElementById('nav-name').textContent = currentUser.full_name;
+    document.getElementById('nav-role').textContent = currentUser.role.replace('_', ' ');
+    document.getElementById('nav-avatar').textContent = currentUser.full_name.split(' ').map(function(n){ return n[0]; }).join('').slice(0,2).toUpperCase();
+    document.getElementById('dash-greeting').textContent = 'Welcome back, ' + currentUser.full_name.split(' ')[0];
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    showPage('dashboard');
+  } catch(e) {
+    doLogout();
+  }
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){
+    if(n.textContent.toLowerCase().includes(name.substring(0,4))) n.classList.add('active');
+  });
+  if(name === 'dashboard') loadDashboard();
+  if(name === 'inspections') { inspSkip = 0; loadInspections(); }
+  if(name === 'agents') loadAgents();
+  if(name === 'company') loadCompany();
+}
+
+async function loadDashboard() {
+  try {
+    const stats = await axios.get(API + '/dashboard/stats');
+    const recent = await axios.get(API + '/inspections/', { params: { limit: 10 } });
+    const s = stats.data;
+    const statDefs = [
+      { label:'Total Inspections', value:s.total_inspections, icon:'📋', color:'#1a56db' },
+      { label:'This Month', value:s.this_month, icon:'📅', color:'#0ea5e9' },
+      { label:'Submitted', value:s.submitted, icon:'⏳', color:'#d97706' },
+      { label:'Approved', value:s.approved, icon:'✅', color:'#16a34a' },
+      { label:'Active Agents', value:s.active_agents, icon:'👤', color:'#7c3aed' },
+    ];
+    document.getElementById('stats-grid').innerHTML = statDefs.map(function(sd){
+      return '<div class="stat-card" style="--accent-color:' + sd.color + '"><div class="stat-icon" style="background:' + sd.color + '20;font-size:20px">' + sd.icon + '</div><div class="stat-value">' + (sd.value !== undefined && sd.value !== null ? sd.value : '0') + '</div><div class="stat-label">' + sd.label + '</div></div>';
+    }).join('');
+    const items = recent.data.items || [];
+    document.getElementById('recent-tbody').innerHTML = items.length === 0
+      ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-lt)">No inspections yet</td></tr>'
+      : items.map(function(i){
+        return '<tr><td class="fw7">' + (i.insured_name||'—') + '</td><td class="mono">' + (i.registration_no||'—') + '</td><td>' + (i.make||'—') + '</td><td class="text-mid">' + (i.agent_name||'—') + '</td><td><span class="badge badge-' + i.status + '">' + i.status + '</span></td><td class="text-mid text-sm">' + (i.created_at ? new Date(i.created_at).toLocaleDateString() : '—') + '</td><td><button class="icon-btn" onclick="openInspectionModal(\'' + i.id + '\')" title="View">👁️</button></td></tr>';
+      }).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function loadInspections() {
+  const search = document.getElementById('insp-search') ? document.getElementById('insp-search').value : '';
+  const status = document.getElementById('insp-status') ? document.getElementById('insp-status').value : '';
+  try {
+    const res = await axios.get(API + '/inspections/', { params: { search: search||undefined, status: status||undefined, skip: inspSkip, limit: INSP_LIMIT } });
+    const items = res.data.items;
+    const total = res.data.total;
+    document.getElementById('insp-count').textContent = total + ' total inspections';
+    document.getElementById('insp-tbody').innerHTML = items.length === 0
+      ? '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-lt)">No inspections found</td></tr>'
+      : items.map(function(i){
+        return '<tr><td class="mono text-sm">' + (i.report_number||'—') + '</td><td class="fw7">' + (i.insured_name||'—') + '</td><td class="mono">' + (i.registration_no||'—') + '</td><td>' + ((i.make||'') + ' ' + (i.model_variant||'')) + '</td><td>' + (i.market_value ? Number(i.market_value).toLocaleString() : '—') + '</td><td class="text-mid">' + (i.agent_name||'—') + '</td><td><span class="badge badge-' + i.status + '">' + i.status + '</span></td><td class="text-mid text-sm">' + (i.created_at ? new Date(i.created_at).toLocaleDateString() : '—') + '</td><td class="actions-cell"><button class="icon-btn" onclick="openInspectionModal(\'' + i.id + '\')" title="View">👁️</button>' + (i.status === 'submitted' ? '<button class="icon-btn" onclick="approveInspection(\'' + i.id + '\')" title="Approve" style="color:var(--success)">✅</button>' : '') + (i.pdf_url ? '<button class="icon-btn" onclick="downloadPdf(\'' + i.id + '\')" title="Download PDF">📄</button>' : '<button class="icon-btn" onclick="genPdf(\'' + i.id + '\')" title="Generate PDF">🖨️</button>') + '</td></tr>';
+      }).join('');
+    const pages = Math.ceil(total / INSP_LIMIT);
+    const curr = inspSkip / INSP_LIMIT + 1;
+    document.getElementById('insp-pagination').innerHTML = '<span>Page ' + curr + ' of ' + pages + ' · ' + total + ' records</span><span style="display:flex;gap:8px">' + (curr > 1 ? '<button class="btn btn-outline" onclick="inspSkip=Math.max(0,inspSkip-' + INSP_LIMIT + ');loadInspections()">Prev</button>' : '') + (curr < pages ? '<button class="btn btn-outline" onclick="inspSkip+=' + INSP_LIMIT + ';loadInspections()">Next</button>' : '') + '</span>';
+  } catch(e) { console.error(e); }
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  inspSkip = 0;
+  searchTimer = setTimeout(loadInspections, 350);
+}
+
+async function openInspectionModal(id) {
+  document.getElementById('insp-modal').style.display = 'flex';
+  document.getElementById('insp-modal-body').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const res = await axios.get(API + '/inspections/' + id);
+    const i = res.data;
+    document.getElementById('insp-modal-title').textContent = i.report_number || 'Inspection Detail';
+    document.getElementById('insp-modal-body').innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px">' +
+      field('Insured', i.insured_name) + field('Contact', i.insured_contact) +
+      field('CNIC', i.insured_cnic) + field('Insurer', i.insurer_name) +
+      field('Make', i.make) + field('Variant', i.model_variant) +
+      field('Reg. No.', i.registration_no) + field('Engine CC', i.engine_cc) +
+      field('Mfg. Year', i.manufacturing_year) + field('Color', i.color) +
+      field('Odometer', i.odometer_reading ? i.odometer_reading.toLocaleString() + ' km' : null) + field('Body Type', i.body_type) +
+      field('Market Value', i.market_value ? 'PKR ' + Number(i.market_value).toLocaleString() : null) + field('Agent', i.agent_name) +
+      '</div><hr style="margin:16px 0;border:none;border-top:1px solid var(--border)"><div><strong>Damages:</strong> ' +
+      (!i.damages || i.damages.length === 0 ? '<span style="color:var(--success)">None</span>' : i.damages.map(function(d){ return d.part + ' — ' + d.type + ' (' + d.severity + ')'; }).join(', ')) +
+      '</div><div style="margin-top:8px"><strong>Factory Accessories:</strong> ' + ((i.factory_accessories||[]).join(', ') || '—') + '</div>';
+    document.getElementById('insp-modal-footer').innerHTML =
+      '<button class="btn btn-outline" onclick="closeModal(\'insp-modal\')">Close</button>' +
+      (i.status === 'submitted' ? '<button class="btn btn-primary" onclick="approveInspection(\'' + id + '\');closeModal(\'insp-modal\')">Approve</button>' : '') +
+      '<button class="btn btn-outline" onclick="genPdf(\'' + id + '\')">Generate PDF</button>';
+  } catch(e) { document.getElementById('insp-modal-body').textContent = 'Error loading inspection.'; }
+}
+
+function field(label, value) {
+  return '<div><div style="font-size:11px;color:var(--text-mid);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">' + label + '</div><div style="font-size:14px;font-weight:500">' + (value||'—') + '</div></div>';
+}
+
+async function approveInspection(id) {
+  try {
+    await axios.post(API + '/inspections/' + id + '/approve');
+    loadInspections();
+    alert('Inspection approved');
+  } catch(e) { alert('Error: ' + (e.response && e.response.data && e.response.data.detail ? e.response.data.detail : 'Could not approve')); }
+}
+
+async function genPdf(id) {
+  try {
+    await axios.post(API + '/reports/' + id + '/generate-pdf');
+    alert('PDF generated! Click the download icon.');
+    loadInspections();
+  } catch(e) { alert('PDF generation failed: ' + (e.response && e.response.data ? JSON.stringify(e.response.data) : e.message)); }
+}
+
+function downloadPdf(id) {
+  window.open(API + '/reports/' + id + '/download', '_blank');
+}
+
+async function loadAgents() {
+  try {
+    const res = await axios.get(API + '/agents/');
+    const agents = res.data;
+    document.getElementById('agents-tbody').innerHTML = agents.length === 0
+      ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-lt)">No agents yet.</td></tr>'
+      : agents.map(function(a){
+        return '<tr><td class="fw7">' + a.full_name + '</td><td>' + a.email + '</td><td class="text-mid">' + (a.phone||'—') + '</td><td>' + a.inspection_count + '</td><td class="text-mid text-sm">' + (a.last_login ? new Date(a.last_login).toLocaleDateString() : 'Never') + '</td><td><span class="badge ' + (a.is_active ? 'badge-active' : 'badge-inactive') + '">' + (a.is_active ? 'Active' : 'Inactive') + '</span></td><td class="actions-cell"><button class="icon-btn" onclick="toggleAgent(\'' + a.id + '\',' + !a.is_active + ')" title="' + (a.is_active ? 'Deactivate' : 'Activate') + '">' + (a.is_active ? '🔒' : '🔓') + '</button></td></tr>';
+      }).join('');
+  } catch(e) { console.error(e); }
+}
+
+function openNewAgentModal() {
+  ['ag-name','ag-email','ag-pw','ag-phone','ag-cnic'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('ag-error').style.display = 'none';
+  document.getElementById('new-agent-modal').style.display = 'flex';
+}
+
+async function createAgent() {
+  const name = document.getElementById('ag-name').value.trim();
+  const email = document.getElementById('ag-email').value.trim();
+  const pw = document.getElementById('ag-pw').value;
+  const errEl = document.getElementById('ag-error');
+  errEl.style.display = 'none';
+  if(!name || !email || !pw) { errEl.textContent = 'Name, email and password are required.'; errEl.style.display = 'block'; return; }
+  try {
+    await axios.post(API + '/agents/', { full_name:name, email:email, password:pw, phone:document.getElementById('ag-phone').value||null, cnic:document.getElementById('ag-cnic').value||null });
+    closeModal('new-agent-modal');
+    loadAgents();
+  } catch(e) { errEl.textContent = e.response && e.response.data && e.response.data.detail ? e.response.data.detail : 'Could not create agent.'; errEl.style.display = 'block'; }
+}
+
+async function toggleAgent(id, active) {
+  try { await axios.patch(API + '/agents/' + id, { is_active:active }); loadAgents(); }
+  catch(e) { alert('Error: ' + (e.response && e.response.data ? e.response.data.detail : e.message)); }
+}
+
+async function loadCompany() {
+  try {
+    const res = await axios.get(API + '/companies/me');
+    const c = res.data;
+    document.getElementById('co-name').value = c.name||'';
+    document.getElementById('co-phone').value = c.phone||'';
+    document.getElementById('co-address').value = c.address||'';
+    document.getElementById('co-color').value = c.report_header_color||'#1a56db';
+    document.getElementById('co-footer').value = c.report_footer_text||'';
+  } catch(e) {}
+}
+
+async function saveCompany() {
+  const msgEl = document.getElementById('co-msg');
+  try {
+    await axios.patch(API + '/companies/me', {
+      name: document.getElementById('co-name').value,
+      phone: document.getElementById('co-phone').value,
+      address: document.getElementById('co-address').value,
+      report_header_color: document.getElementById('co-color').value,
+      report_footer_text: document.getElementById('co-footer').value,
+    });
+    msgEl.style.cssText = 'display:block;background:#dcfce7;color:#166534;padding:10px 14px;border-radius:8px;margin-top:14px';
+    msgEl.textContent = 'Company settings saved successfully.';
+    setTimeout(function(){ msgEl.style.display='none'; }, 3000);
+  } catch(e) {
+    msgEl.style.cssText = 'display:block;background:#fee2e2;color:var(--danger);padding:10px 14px;border-radius:8px;margin-top:14px';
+    msgEl.textContent = 'Error: ' + (e.response && e.response.data ? e.response.data.detail : e.message);
+  }
+}
+
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+if(token) {
+  axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
+  initApp().catch(function(){ doLogout(); });
+}
+</script>
+</body>
+</html>

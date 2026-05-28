@@ -36,3 +36,8 @@ app.include_router(dashboard.router,   prefix="/api/dashboard",   tags=["Dashboa
 @app.get("/")
 def root():
     return {"status": "InspectPro API running", "version": "1.0.0"}
+
+@app.get("/admin")
+def admin(): 
+    from fastapi.responses import FileResponse
+    return FileResponse("admin/index.html")
