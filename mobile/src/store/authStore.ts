@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
-import { login as apiLogin, getMe } from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getMe, API_BASE, setAuthToken } from '../services/api';
+import axios from 'axios';
 
 interface AuthState {
   token: string | null;
@@ -18,28 +19,37 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   loadStoredSession: async () => {
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
+      const token = await AsyncStorage.getItem('auth_token');
       if (token) {
+        setAuthToken(token);
         const res = await getMe();
         set({ token, user: res.data, isLoading: false });
       } else {
         set({ isLoading: false });
       }
     } catch {
-      await SecureStore.deleteItemAsync('auth_token');
+      await AsyncStorage.removeItem('auth_token');
+      setAuthToken(null);
       set({ token: null, user: null, isLoading: false });
     }
   },
 
   login: async (email, password) => {
-    const res = await apiLogin(email, password);
-    const { access_token, ...userData } = res.data;
-    await SecureStore.setItemAsync('auth_token', access_token);
-    set({ token: access_token, user: userData });
+    const params = new URLSearchParams();
+    params.append('username', email);
+    params.append('password', password);
+    const res = await axios.post(`${API_BASE}/auth/login`, params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const token = res.data.access_token;
+    await AsyncStorage.setItem('auth_token', token);
+    setAuthToken(token);
+    set({ token, user: res.data });
   },
 
   logout: async () => {
-    await SecureStore.deleteItemAsync('auth_token');
+    await AsyncStorage.removeItem('auth_token');
+    setAuthToken(null);
     set({ token: null, user: null });
   },
 }));
