@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, Share, Image, Platform,
+  Alert, ActivityIndicator, Image, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -43,6 +43,7 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [hasPdf, setHasPdf] = useState(false);
 
   useEffect(() => {
     load();
@@ -52,6 +53,7 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
     try {
       const res = await getInspection(id);
       setInspection(res.data);
+      setHasPdf(!!res.data.pdf_url);
     } catch {
       Alert.alert('Error', 'Could not load inspection.');
       navigation.goBack();
@@ -80,47 +82,41 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
     ]);
   };
 
+  const handleSharePdfById = async (inspectionId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('auth_token');
+      const downloadUrl = 'https://inspectpro-api.fly.dev/api/reports/' + inspectionId + '/download';
+      const localPath = FileSystem.cacheDirectory + 'report_' + inspectionId + '.pdf';
+      const dl = await FileSystem.downloadAsync(downloadUrl, localPath, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(dl.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share Inspection Report',
+        });
+      } else {
+        Alert.alert('Not available', 'Sharing is not available on this device.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not share PDF. Try again.');
+      console.log('Share error:', e);
+    }
+  };
+
   const handleGeneratePdf = async () => {
     setGeneratingPdf(true);
     try {
       await generatePdf(id);
-      await load();
-      Alert.alert('PDF Ready', 'The report PDF has been generated.', [
-        { text: 'Share Now', onPress: handleSharePdf },
+      setHasPdf(true);
+      setGeneratingPdf(false);
+      Alert.alert('PDF Ready', 'Your report has been generated.', [
+        { text: 'Share Now', onPress: () => handleSharePdfById(id) },
         { text: 'OK' },
       ]);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.detail || 'PDF generation failed.');
-    } finally {
       setGeneratingPdf(false);
-    }
-  };
-
-  const handleSharePdf = async () => {
-    if (!inspection?.pdf_url) {
-      Alert.alert('No PDF', 'Generate the PDF first.');
-      return;
-    }
-    try {
-      const token = await AsyncStorage.getItem('auth_token');
-      const downloadUrl = 'https://inspectpro-api.fly.dev/api/reports/' + id + '/download';
-      const localPath = FileSystem.cacheDirectory + 'report_' + id + '.pdf';
-
-      const dl = await FileSystem.downloadAsync(downloadUrl, localPath, {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(dl.uri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Share ' + (inspection.report_number || 'Report'),
-        });
-      } else {
-        Alert.alert('Sharing not available', 'Your device does not support sharing.');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Could not download PDF. Try again.');
-      console.log('Share error:', e);
     }
   };
 
@@ -165,8 +161,8 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
               : <><Ionicons name="document-text" size={16} color="#fff" /><Text style={styles.actionBtnText}>Generate PDF</Text></>
             }
           </TouchableOpacity>
-          {inspection.pdf_url && (
-            <TouchableOpacity style={[styles.actionBtn, styles.shareBtn]} onPress={handleSharePdf}>
+          {hasPdf && (
+            <TouchableOpacity style={[styles.actionBtn, styles.shareBtn]} onPress={() => handleSharePdfById(id)}>
               <Ionicons name="share-social" size={16} color="#fff" />
               <Text style={styles.actionBtnText}>Share</Text>
             </TouchableOpacity>
@@ -274,8 +270,10 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
               {photos.map((p: any) => (
                 <View key={p.id} style={styles.photoItem}>
-                  <Image source={{ uri: p.url.startsWith('http') ? p.url : `https://inspectpro-api.fly.dev${p.url}` }}
-                    style={styles.photoThumb} resizeMode="cover" />
+                  <Image
+                    source={{ uri: p.url.startsWith('http') ? p.url : `https://inspectpro-api.fly.dev${p.url}` }}
+                    style={styles.photoThumb} resizeMode="cover"
+                  />
                   {p.caption ? <Text style={styles.photoCaption} numberOfLines={1}>{p.caption}</Text> : null}
                 </View>
               ))}
