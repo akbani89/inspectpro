@@ -4,7 +4,8 @@ import {
   Alert, ActivityIndicator, Share, Image, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getInspection, generatePdf, submitInspection, getDownloadUrl } from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getInspection, generatePdf, submitInspection } from '../services/api';
 import { colors, spacing, radius, shadow } from '../theme';
 import { format } from 'date-fns';
 import * as FileSystem from 'expo-file-system';
@@ -85,7 +86,7 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
       await generatePdf(id);
       await load();
       Alert.alert('PDF Ready', 'The report PDF has been generated.', [
-        { text: 'Share', onPress: handleSharePdf },
+        { text: 'Share Now', onPress: handleSharePdf },
         { text: 'OK' },
       ]);
     } catch (e: any) {
@@ -101,16 +102,25 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
       return;
     }
     try {
-      const downloadUrl = getDownloadUrl(id);
-      const localPath = FileSystem.cacheDirectory + `${inspection.report_number?.replace(/\//g, '_')}.pdf`;
-      const dl = await FileSystem.downloadAsync(downloadUrl, localPath);
+      const token = await AsyncStorage.getItem('auth_token');
+      const downloadUrl = 'https://inspectpro-api.fly.dev/api/reports/' + id + '/download';
+      const localPath = FileSystem.cacheDirectory + 'report_' + id + '.pdf';
+
+      const dl = await FileSystem.downloadAsync(downloadUrl, localPath, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(dl.uri, { mimeType: 'application/pdf' });
+        await Sharing.shareAsync(dl.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share ' + (inspection.report_number || 'Report'),
+        });
       } else {
-        Share.share({ message: `Report: ${inspection.report_number}`, url: dl.uri });
+        Alert.alert('Sharing not available', 'Your device does not support sharing.');
       }
-    } catch {
-      Alert.alert('Error', 'Could not share the PDF.');
+    } catch (e) {
+      Alert.alert('Error', 'Could not download PDF. Try again.');
+      console.log('Share error:', e);
     }
   };
 
@@ -128,7 +138,6 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
 
   return (
     <View style={styles.screen}>
-      {/* Nav bar */}
       <View style={styles.navBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -141,7 +150,6 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
-        {/* Action buttons */}
         <View style={styles.actionRow}>
           {inspection.status === 'draft' && (
             <TouchableOpacity style={[styles.actionBtn, styles.submitBtn]} onPress={handleSubmit} disabled={submitting}>
@@ -165,7 +173,6 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        {/* Proposal */}
         <Section title="Proposal Details">
           <Row label="Insurer" value={inspection.insurer_name} />
           <Row label="Branch" value={inspection.branch_name} />
@@ -176,7 +183,6 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
           <Row label="Address" value={inspection.insured_address} />
         </Section>
 
-        {/* Vehicle */}
         <Section title="Vehicle Details">
           <Row label="Manufacturer" value={inspection.manufacturer} />
           <Row label="Make / Model" value={inspection.make} />
@@ -194,7 +200,6 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
           <Row label="Assembly" value={inspection.assembly} />
         </Section>
 
-        {/* Accessories */}
         <Section title="Accessories">
           <Text style={styles.rowLabel}>Factory Fitted</Text>
           <View style={styles.tagRow}>
@@ -216,7 +221,6 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
           </View>
         </Section>
 
-        {/* Body Observations */}
         <Section title="Body Observations">
           {inspection.is_new_vehicle ? (
             <View style={styles.newVehicleBanner}>
@@ -251,7 +255,6 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
           )}
         </Section>
 
-        {/* Valuation */}
         <Section title="Estimated Values">
           <View style={styles.valuationCard}>
             <Text style={styles.valuationLabel}>Current Market Value</Text>
@@ -266,13 +269,12 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
           )}
         </Section>
 
-        {/* Photos */}
         {photos.length > 0 && (
           <Section title={`Photos (${photos.length})`}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
               {photos.map((p: any) => (
                 <View key={p.id} style={styles.photoItem}>
-                  <Image source={{ uri: p.url.startsWith('http') ? p.url : `http://localhost:8000${p.url}` }}
+                  <Image source={{ uri: p.url.startsWith('http') ? p.url : `https://inspectpro-api.fly.dev${p.url}` }}
                     style={styles.photoThumb} resizeMode="cover" />
                   {p.caption ? <Text style={styles.photoCaption} numberOfLines={1}>{p.caption}</Text> : null}
                 </View>
@@ -281,14 +283,13 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
           </Section>
         )}
 
-        {/* Documents */}
         <Section title="Documents Received">
           {[
-            { key: 'reg_book',     label: 'Registration Book' },
+            { key: 'reg_book', label: 'Registration Book' },
             { key: 'sale_invoice', label: 'Sale Invoice' },
-            { key: 'cnic',         label: 'CNIC of Insured' },
-            { key: 'import_docs',  label: 'Import Documents' },
-            { key: 'bill_of_entry',label: 'Bill of Entry / Lading' },
+            { key: 'cnic', label: 'CNIC of Insured' },
+            { key: 'import_docs', label: 'Import Documents' },
+            { key: 'bill_of_entry', label: 'Bill of Entry / Lading' },
           ].map(doc => (
             <View key={doc.key} style={styles.docRow}>
               <Ionicons
@@ -301,7 +302,6 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
           ))}
         </Section>
 
-        {/* Surveyor */}
         <Section title="Surveyor Details">
           <Row label="Agent" value={inspection.agent_name} />
           <Row label="Place" value={inspection.inspection_place} />
@@ -335,20 +335,17 @@ const styles = StyleSheet.create({
   navTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.full },
   badgeText: { fontSize: 9, fontWeight: '700' },
-
   scroll: { flex: 1 },
   content: { padding: spacing.md },
-
   actionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   actionBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: 12, borderRadius: radius.md, gap: 6,
   },
   submitBtn: { backgroundColor: colors.primary },
-  pdfBtn:    { backgroundColor: colors.accent },
-  shareBtn:  { backgroundColor: colors.success },
+  pdfBtn: { backgroundColor: colors.accent },
+  shareBtn: { backgroundColor: colors.success },
   actionBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-
   section: {
     backgroundColor: colors.surface, borderRadius: radius.md,
     marginBottom: spacing.sm, overflow: 'hidden', ...shadow.card,
@@ -359,7 +356,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
-
   row: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     paddingHorizontal: spacing.md, paddingVertical: 9,
@@ -367,18 +363,15 @@ const styles = StyleSheet.create({
   },
   rowLabel: { fontSize: 12, color: colors.textMid, flex: 1 },
   rowValue: { fontSize: 13, color: colors.text, fontWeight: '500', flex: 1.5, textAlign: 'right' },
-
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
   tag: { backgroundColor: '#f1f5f9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full },
   tagText: { fontSize: 12, color: colors.textMid },
   nilText: { fontSize: 13, color: colors.textLight, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
-
   newVehicleBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#f0fdf4', margin: spacing.sm, padding: spacing.sm, borderRadius: radius.sm,
   },
   newVehicleText: { fontSize: 13, color: colors.success, fontWeight: '500' },
-
   damageRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     paddingHorizontal: spacing.md, paddingVertical: 8,
@@ -392,22 +385,18 @@ const styles = StyleSheet.create({
   damagePart: { fontSize: 13, fontWeight: '600', color: colors.text },
   damageDetail: { fontSize: 11, color: colors.textMid, marginTop: 1 },
   severityDot: { width: 8, height: 8, borderRadius: 4 },
-
   notesBox: { margin: spacing.sm, padding: spacing.sm, backgroundColor: '#fffbeb', borderRadius: radius.sm, borderLeftWidth: 3, borderLeftColor: colors.warning },
   notesText: { fontSize: 12, color: colors.textMid, lineHeight: 18 },
-
   valuationCard: {
     margin: spacing.sm, padding: spacing.md,
     backgroundColor: colors.primary, borderRadius: radius.md,
   },
   valuationLabel: { fontSize: 11, color: 'rgba(255,255,255,0.75)', marginBottom: 4 },
   valuationAmount: { fontSize: 26, fontWeight: '700', color: '#fff' },
-
   photoScroll: { paddingLeft: spacing.md, paddingVertical: spacing.sm },
   photoItem: { marginRight: spacing.sm, width: 120 },
   photoThumb: { width: 120, height: 90, borderRadius: radius.sm },
   photoCaption: { fontSize: 10, color: colors.textMid, marginTop: 3, textAlign: 'center' },
-
   docRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.bg },
   docLabel: { fontSize: 13, color: colors.text },
 });
