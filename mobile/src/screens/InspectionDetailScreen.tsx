@@ -44,6 +44,7 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [hasPdf, setHasPdf] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     load();
@@ -83,13 +84,30 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
   };
 
   const handleSharePdfById = async (inspectionId: string) => {
+    setSharing(true);
     try {
       const token = await AsyncStorage.getItem('auth_token');
+      if (!token) {
+        Alert.alert('Error', 'Not logged in. Please log in again.');
+        return;
+      }
+
       const downloadUrl = 'https://inspectpro-api.fly.dev/api/reports/' + inspectionId + '/download';
       const localPath = FileSystem.cacheDirectory + 'report_' + inspectionId + '.pdf';
+
+      console.log('Downloading from:', downloadUrl);
+
       const dl = await FileSystem.downloadAsync(downloadUrl, localPath, {
         headers: { Authorization: 'Bearer ' + token }
       });
+
+      console.log('Download status:', dl.status, 'URI:', dl.uri);
+
+      if (dl.status !== 200) {
+        Alert.alert('Download Failed', 'Server returned status: ' + dl.status + '. Please try generating the PDF again.');
+        return;
+      }
+
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(dl.uri, {
           mimeType: 'application/pdf',
@@ -98,9 +116,11 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
       } else {
         Alert.alert('Not available', 'Sharing is not available on this device.');
       }
-    } catch (e) {
-      Alert.alert('Error', 'Could not share PDF. Try again.');
+    } catch (e: any) {
       console.log('Share error:', e);
+      Alert.alert('Error', 'Could not share PDF: ' + e.message);
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -162,9 +182,11 @@ export default function InspectionDetailScreen({ route, navigation }: any) {
             }
           </TouchableOpacity>
           {hasPdf && (
-            <TouchableOpacity style={[styles.actionBtn, styles.shareBtn]} onPress={() => handleSharePdfById(id)}>
-              <Ionicons name="share-social" size={16} color="#fff" />
-              <Text style={styles.actionBtnText}>Share</Text>
+            <TouchableOpacity style={[styles.actionBtn, styles.shareBtn]} onPress={() => handleSharePdfById(id)} disabled={sharing}>
+              {sharing
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <><Ionicons name="share-social" size={16} color="#fff" /><Text style={styles.actionBtnText}>Share</Text></>
+              }
             </TouchableOpacity>
           )}
         </View>
