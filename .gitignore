@@ -6,3 +6,4 @@ backend/*.pyc
 backend/uploads/
 .idea/
 *.log
+*.zip
