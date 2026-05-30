@@ -133,6 +133,7 @@
       <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">🏠</span> Dashboard</div>
       <div class="nav-item" onclick="showPage('inspections')"><span class="icon">📋</span> Inspections</div>
       <div class="nav-item" onclick="showPage('agents')"><span class="icon">👤</span> Agents</div>
+      <div class="nav-item" onclick="showPage('companies')"><span class="icon">🏢</span> Companies</div>
       <div class="nav-section">Settings</div>
       <div class="nav-item" onclick="showPage('company')"><span class="icon">🏢</span> Company</div>
     </nav>
@@ -197,6 +198,19 @@
       </div>
     </div>
 
+    <div id="page-companies" class="page">
+      <div class="topbar">
+        <div><h1>Companies</h1><div class="sub">All survey companies on the platform</div></div>
+        <button class="btn btn-primary" onclick="openNewCompanyModal()">+ Add Company</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Company</th><th>Email</th><th>Admin Email</th><th>Agents</th><th>Inspections</th><th>Status</th><th></th></tr></thead>
+          <tbody id="companies-tbody"><tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <div id="page-company" class="page">
       <div class="topbar">
         <div><h1>Company Settings</h1><div class="sub">Branding &amp; configuration</div></div>
@@ -215,6 +229,30 @@
       </div>
     </div>
   </main>
+</div>
+
+<div class="modal-overlay" id="new-company-modal" style="display:none" onclick="if(event.target===this)closeModal('new-company-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add New Company</span>
+      <button class="modal-close" onclick="closeModal('new-company-modal')">x</button>
+    </div>
+    <div class="modal-body">
+      <label>Company Name</label><input type="text" id="co-new-name" placeholder="e.g. Prism Surveyors" />
+      <label>Company Email</label><input type="email" id="co-new-email" placeholder="info@company.com" />
+      <label>Company Phone</label><input type="tel" id="co-new-phone" placeholder="0300-1234567" />
+      <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
+      <p style="font-size:12px;color:var(--text-mid);margin-bottom:8px">Company Admin Account</p>
+      <label>Admin Full Name</label><input type="text" id="co-new-admin-name" placeholder="Muhammad Ali" />
+      <label>Admin Email</label><input type="email" id="co-new-admin-email" placeholder="admin@company.com" />
+      <label>Admin Password</label><input type="password" id="co-new-admin-pw" placeholder="min 8 chars" />
+      <div id="co-new-error" style="display:none;margin-top:12px" class="error-msg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('new-company-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createCompany()">Create Company</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="new-agent-modal" style="display:none" onclick="if(event.target===this)closeModal('new-agent-modal')">
@@ -320,6 +358,7 @@ function showPage(name) {
   if(name === 'inspections') { inspSkip = 0; loadInspections(); }
   if(name === 'agents') loadAgents();
   if(name === 'company') loadCompany();
+  if(name === 'companies') loadCompanies();
 }
 
 async function loadDashboard() {
@@ -418,7 +457,20 @@ async function genPdf(id) {
 }
 
 function downloadPdf(id) {
-  window.open(API + '/reports/' + id + '/download', '_blank');
+  const t = localStorage.getItem('ip_token');
+  fetch(API + '/reports/' + id + '/download', {
+    headers: { 'Authorization': 'Bearer ' + t }
+  })
+  .then(function(r){ return r.blob(); })
+  .then(function(blob){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inspection_report.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+  })
+  .catch(function(){ alert('Could not download PDF. Try again.'); });
 }
 
 async function loadAgents() {
@@ -487,6 +539,65 @@ async function saveCompany() {
     msgEl.style.cssText = 'display:block;background:#fee2e2;color:var(--danger);padding:10px 14px;border-radius:8px;margin-top:14px';
     msgEl.textContent = 'Error: ' + (e.response && e.response.data ? e.response.data.detail : e.message);
   }
+}
+
+async function loadCompanies() {
+  try {
+    const res = await axios.get(API + '/companies/');
+    const companies = res.data;
+    document.getElementById('companies-tbody').innerHTML = companies.length === 0
+      ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-lt)">No companies yet. Add your first one.</td></tr>'
+      : companies.map(function(c){
+        return '<tr><td class="fw7">' + c.name + '</td><td>' + c.email + '</td><td class="text-mid">—</td><td>' + (c.agent_count||0) + '</td><td>' + (c.inspection_count||0) + '</td><td><span class="badge ' + (c.is_active ? 'badge-active' : 'badge-inactive') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td><td class="actions-cell"><button class="icon-btn" onclick="toggleCompany('' + c.id + '',' + !c.is_active + ')" title="' + (c.is_active ? 'Deactivate' : 'Activate') + '">' + (c.is_active ? '🔒' : '🔓') + '</button></td></tr>';
+      }).join('');
+  } catch(e) { console.error(e); }
+}
+
+function openNewCompanyModal() {
+  ['co-new-name','co-new-email','co-new-phone','co-new-admin-name','co-new-admin-email','co-new-admin-pw'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('co-new-error').style.display = 'none';
+  document.getElementById('new-company-modal').style.display = 'flex';
+}
+
+async function createCompany() {
+  const name = document.getElementById('co-new-name').value.trim();
+  const email = document.getElementById('co-new-email').value.trim();
+  const phone = document.getElementById('co-new-phone').value.trim();
+  const adminName = document.getElementById('co-new-admin-name').value.trim();
+  const adminEmail = document.getElementById('co-new-admin-email').value.trim();
+  const adminPw = document.getElementById('co-new-admin-pw').value;
+  const errEl = document.getElementById('co-new-error');
+  errEl.style.display = 'none';
+
+  if (!name || !email || !adminName || !adminEmail || !adminPw) {
+    errEl.textContent = 'All fields are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    await axios.post(API + '/auth/register-company', {
+      company_name: name,
+      company_email: email,
+      admin_full_name: adminName,
+      admin_email: adminEmail,
+      password: adminPw,
+      phone: phone || null,
+    });
+    closeModal('new-company-modal');
+    loadCompanies();
+    alert('Company created! Admin can now login with: ' + adminEmail);
+  } catch(e) {
+    errEl.textContent = e.response && e.response.data && e.response.data.detail ? e.response.data.detail : 'Could not create company.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function toggleCompany(id, active) {
+  try {
+    await axios.patch(API + '/companies/' + id + '/status?active=' + active);
+    loadCompanies();
+  } catch(e) { alert('Error: ' + (e.response && e.response.data ? e.response.data.detail : e.message)); }
 }
 
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
