@@ -548,7 +548,7 @@ async function loadCompanies() {
     document.getElementById('companies-tbody').innerHTML = companies.length === 0
       ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-lt)">No companies yet. Add your first one.</td></tr>'
       : companies.map(function(c){
-        return '<tr><td class="fw7">' + c.name + '</td><td>' + c.email + '</td><td class="text-mid">—</td><td>' + (c.agent_count||0) + '</td><td>' + (c.inspection_count||0) + '</td><td><span class="badge ' + (c.is_active ? 'badge-active' : 'badge-inactive') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td><td class="actions-cell"><button class="icon-btn" onclick="toggleCompany('' + c.id + '',' + !c.is_active + ')" title="' + (c.is_active ? 'Deactivate' : 'Activate') + '">' + (c.is_active ? '🔒' : '🔓') + '</button></td></tr>';
+        return '<tr><td class="fw7">' + c.name + '</td><td>' + c.email + '</td><td class="text-mid">—</td><td>' + (c.agent_count||0) + '</td><td>' + (c.inspection_count||0) + '</td><td><span class="badge ' + (c.is_active ? 'badge-active' : 'badge-inactive') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td><td class="actions-cell"><button class="icon-btn" onclick="toggleCompany('" + c.id + "',' + !c.is_active + ')" title="' + (c.is_active ? 'Deactivate' : 'Activate') + '">' + (c.is_active ? '🔒' : '🔓') + '</button></td></tr>';
       }).join('');
   } catch(e) { console.error(e); }
 }
