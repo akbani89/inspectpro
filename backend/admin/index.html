@@ -418,7 +418,20 @@ async function genPdf(id) {
 }
 
 function downloadPdf(id) {
-  window.open(API + '/reports/' + id + '/download', '_blank');
+  const t = localStorage.getItem('ip_token');
+  fetch(API + '/reports/' + id + '/download', {
+    headers: { 'Authorization': 'Bearer ' + t }
+  })
+  .then(function(r){ return r.blob(); })
+  .then(function(blob){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inspection_report.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+  })
+  .catch(function(){ alert('Could not download PDF. Try again.'); });
 }
 
 async function loadAgents() {
