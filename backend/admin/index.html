@@ -1,174 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>InspectPro — Admin Dashboard</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>InspectPro — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--primary:#1a56db;--primary-lt:#eff4ff;--success:#16a34a;--warning:#d97706;--danger:#dc2626;--accent:#0ea5e9;--bg:#f8fafc;--surface:#fff;--border:#e2e8f0;--text:#0f172a;--text-mid:#475569;--text-lt:#94a3b8;--sidebar-w:240px;--radius:10px}
+:root{
+  --primary:#1a56db;--success:#16a34a;--warning:#d97706;--danger:#dc2626;--accent:#0ea5e9;
+  --bg:#f1f5f9;--surface:#fff;--border:#e2e8f0;--text:#0f172a;--text-mid:#475569;--text-lt:#94a3b8;
+  --sidebar-w:250px;--radius:10px;
+}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 #app{display:flex;min-height:100vh}
-aside{width:var(--sidebar-w);background:var(--text);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
-.sidebar-logo{padding:24px 20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:12px}
-.logo-mark{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
-.logo-name{font-size:18px;font-weight:700}
-.logo-tag{font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px}
-nav{flex:1;padding:16px 12px}
-.nav-section{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin:16px 8px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,0.7);font-weight:500;transition:all .15s;margin-bottom:2px}
-.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+
+/* Sidebar */
+aside{width:var(--sidebar-w);background:#0f172a;color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow-y:auto}
+.sb-logo{padding:20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px}
+.sb-mark{width:38px;height:38px;background:var(--primary);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
+.sb-name{font-size:17px;font-weight:700;letter-spacing:-0.3px}
+.sb-tag{font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px}
+nav{flex:1;padding:12px}
+.nav-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.3);margin:16px 8px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,0.65);font-weight:500;font-size:13px;transition:all .15s;margin-bottom:1px;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,0.07);color:#fff}
 .nav-item.active{background:var(--primary);color:#fff}
-.nav-item .icon{font-size:16px;width:20px;text-align:center}
-.sidebar-footer{padding:16px;border-top:1px solid rgba(255,255,255,0.1)}
-.user-info{display:flex;align-items:center;gap:10px}
-.user-avatar{width:34px;height:34px;border-radius:17px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
-.user-name{font-size:13px;font-weight:600}
-.user-role{font-size:10px;color:rgba(255,255,255,0.5)}
-.logout-btn{margin-top:10px;width:100%;padding:8px;border-radius:6px;background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-family:inherit;font-size:13px}
-.logout-btn:hover{background:rgba(220,38,38,0.3);color:#fff}
-main{margin-left:var(--sidebar-w);flex:1;padding:32px}
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
-.topbar h1{font-size:26px;font-weight:700;letter-spacing:-0.5px}
-.topbar .sub{font-size:13px;color:var(--text-mid);margin-top:2px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
-.btn-primary{background:var(--primary);color:#fff}
-.btn-primary:hover{background:#1340b0}
-.btn-outline{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}
-.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
-.stat-card{background:var(--surface);border-radius:var(--radius);padding:20px;border:1px solid var(--border);position:relative;overflow:hidden}
-.stat-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent-color,var(--primary))}
-.stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
-.stat-value{font-size:28px;font-weight:700;letter-spacing:-1px}
-.stat-label{font-size:12px;color:var(--text-mid);margin-top:3px}
-.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:24px}
-.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-title{font-size:15px;font-weight:700}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-footer{padding:14px;border-top:1px solid rgba(255,255,255,0.08)}
+.sb-user{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sb-avatar{width:34px;height:34px;border-radius:17px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+.sb-uname{font-size:13px;font-weight:600}
+.sb-urole{font-size:10px;color:rgba(255,255,255,0.4);text-transform:capitalize}
+.logout-btn{width:100%;padding:8px;border-radius:7px;background:rgba(255,255,255,0.06);border:none;color:rgba(255,255,255,0.55);cursor:pointer;font-family:inherit;font-size:12px;transition:all .15s}
+.logout-btn:hover{background:rgba(220,38,38,0.25);color:#fca5a5}
+
+/* Main */
+main{margin-left:var(--sidebar-w);flex:1;padding:28px;min-height:100vh}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px}
+.topbar h1{font-size:24px;font-weight:700;letter-spacing:-0.5px}
+.topbar .sub{font-size:13px;color:var(--text-mid);margin-top:3px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:#1340b0}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#15803d}
+.btn-danger{background:#fee2e2;color:var(--danger)}.btn-danger:hover{background:#fecaca}
+.btn-outline{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--surface);border-radius:var(--radius);padding:18px;border:1px solid var(--border);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--c,var(--primary))}
+.stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:10px;background:var(--ci,#eff4ff)}
+.stat-value{font-size:26px;font-weight:700;letter-spacing:-1px}
+.stat-label{font-size:11px;color:var(--text-mid);margin-top:3px}
+
+/* Card */
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:20px}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:700}
+
+/* Table */
 table{width:100%;border-collapse:collapse}
-th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-mid);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg)}
-td{padding:12px 16px;border-bottom:1px solid var(--bg);font-size:13px;vertical-align:middle}
+th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-mid);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);background:#f8fafc;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid #f8fafc;font-size:13px;vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--bg)}
-.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+tr:hover td{background:#fafbfc}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
 .badge-draft{background:#f1f5f9;color:#475569}
 .badge-submitted{background:#dbeafe;color:#1e40af}
 .badge-approved{background:#dcfce7;color:#166534}
 .badge-rejected{background:#fee2e2;color:#991b1b}
 .badge-active{background:#dcfce7;color:#166534}
 .badge-inactive{background:#fee2e2;color:#991b1b}
-.filters{display:flex;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.search-input{flex:1;min-width:200px;padding:8px 12px 8px 34px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;background:var(--bg);outline:none}
-.search-input:focus{border-color:var(--primary)}
+
+/* Filters */
+.filters{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.search-box{flex:1;min-width:180px;position:relative}
+.search-box input{width:100%;padding:8px 12px 8px 32px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;background:var(--bg);outline:none}
+.search-box input:focus{border-color:var(--primary);background:#fff}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-lt);font-size:13px}
 select{padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;background:var(--bg);outline:none;cursor:pointer}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px}
-.modal{background:var(--surface);border-radius:14px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
-.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-.modal-title{font-size:18px;font-weight:700}
-.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-mid);line-height:1}
-.modal-body{padding:24px}
-.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
-label{display:block;font-size:12px;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;margin-top:14px}
-label:first-child{margin-top:0}
-input[type=text],input[type=email],input[type=password],input[type=tel],input[type=number],textarea{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;outline:none;background:var(--bg)}
-input:focus,textarea:focus{border-color:var(--primary)}
-textarea{height:80px;resize:vertical}
-.page{display:none}
-.page.active{display:block}
-.loading{text-align:center;padding:48px;color:var(--text-mid)}
-.spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px}
+select:focus{border-color:var(--primary)}
+
+/* Pagination */
+.pagination{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-mid)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;backdrop-filter:blur(2px)}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.25)}
+.modal-lg{max-width:780px}
+.modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-size:17px;font-weight:700}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-mid);line-height:1;padding:2px 6px;border-radius:6px}
+.modal-close:hover{background:var(--bg)}
+.modal-body{padding:22px}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface)}
+
+/* Form */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px}
+.form-control{width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;outline:none;background:var(--bg);transition:border-color .15s}
+.form-control:focus{border-color:var(--primary);background:#fff}
+.form-control[readonly]{background:#f8fafc;color:var(--text-mid);cursor:not-allowed}
+textarea.form-control{height:80px;resize:vertical}
+.form-divider{border:none;border-top:1px solid var(--border);margin:18px 0}
+.form-section-title{font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
+
+/* Inspection detail */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
+.detail-field{padding:8px 0;border-bottom:1px solid var(--bg)}
+.detail-label{font-size:10px;font-weight:700;color:var(--text-lt);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+.detail-value{font-size:13px;font-weight:500;color:var(--text)}
+.detail-section{margin-bottom:18px}
+.detail-section-title{font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--primary);padding-bottom:4px;margin-bottom:12px}
+.tag{display:inline-block;background:#f1f5f9;color:var(--text-mid);padding:3px 9px;border-radius:5px;font-size:11px;margin:2px}
+.damage-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bg)}
+.damage-num{width:22px;height:22px;border-radius:11px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--warning);flex-shrink:0}
+.damage-part{font-size:13px;font-weight:600;flex:1}
+.damage-detail{font-size:11px;color:var(--text-mid)}
+.severity-dot{width:8px;height:8px;border-radius:4px;flex-shrink:0}
+.doc-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg);font-size:13px}
+.check-yes{color:var(--success);font-size:16px}
+.check-no{color:var(--danger);font-size:16px}
+.photos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.photo-item img{width:100%;height:110px;object-fit:cover;border-radius:7px;border:1px solid var(--border);cursor:pointer;transition:transform .15s}
+.photo-item img:hover{transform:scale(1.02)}
+.photo-caption{font-size:10px;color:var(--text-mid);text-align:center;margin-top:3px}
+.valuation-box{background:var(--primary);color:#fff;border-radius:9px;padding:14px 18px;margin:10px 0}
+.valuation-label{font-size:10px;opacity:0.75;margin-bottom:3px}
+.valuation-amount{font-size:24px;font-weight:700;letter-spacing:-0.5px}
+.rejection-box{background:#fff5f5;border:1.5px solid #fecaca;border-radius:8px;padding:12px 14px;margin-top:10px}
+.rejection-label{font-size:10px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.rejection-text{font-size:13px;color:#7f1d1d}
+.no-damage{background:#f0fdf4;border-radius:7px;padding:12px;text-align:center;color:var(--success);font-weight:600;font-size:13px}
+
+/* Pages */
+.page{display:none}.page.active{display:block}
+.loading{text-align:center;padding:40px;color:var(--text-mid)}
+.spinner{display:inline-block;width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:10px}
 @keyframes spin{to{transform:rotate(360deg)}}
-#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
-.login-card{background:var(--surface);border-radius:16px;padding:40px;width:380px;box-shadow:0 4px 24px rgba(0,0,0,0.08);border:1px solid var(--border)}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-mid)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.empty-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.empty-sub{font-size:13px;color:var(--text-lt)}
+
+/* Login */
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a 0%,#1a56db 100%)}
+.login-card{background:var(--surface);border-radius:18px;padding:40px;width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
 .login-logo{text-align:center;margin-bottom:28px}
-.login-logo .mark{width:56px;height:56px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;margin-bottom:12px}
-.login-logo h1{font-size:22px;font-weight:700}
-.login-logo p{font-size:13px;color:var(--text-mid);margin-top:4px}
-.login-btn{width:100%;padding:12px;margin-top:20px}
+.login-mark{width:60px;height:60px;background:var(--primary);border-radius:15px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;box-shadow:0 8px 20px rgba(26,86,219,0.4)}
+.login-title{font-size:22px;font-weight:700;letter-spacing:-0.5px}
+.login-sub{font-size:13px;color:var(--text-mid);margin-top:4px}
+.login-btn{width:100%;padding:12px;margin-top:20px;font-size:15px}
 .error-msg{background:#fee2e2;color:var(--danger);padding:10px 14px;border-radius:8px;font-size:13px;margin-top:12px}
-.mono{font-family:'DM Mono',monospace;font-size:12px}
+
+.actions-cell{display:flex;gap:5px;flex-wrap:wrap}
+.mono{font-family:'DM Mono',monospace;font-size:11px}
+.fw6{font-weight:600}
+.fw7{font-weight:700}
 .text-mid{color:var(--text-mid)}
 .text-sm{font-size:12px}
-.fw7{font-weight:700}
-.actions-cell{display:flex;gap:6px}
-.icon-btn{background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;font-size:14px;transition:background .1s}
-.icon-btn:hover{background:var(--bg)}
 </style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
     <div class="login-logo">
-      <div class="mark">IP</div>
-      <h1>InspectPro</h1>
-      <p>Admin Dashboard</p>
+      <div class="login-mark">IP</div>
+      <div class="login-title">InspectPro</div>
+      <div class="login-sub">Admin Dashboard</div>
     </div>
-    <label>Email address</label>
-    <input type="email" id="l-email" placeholder="admin@company.com" />
-    <label>Password</label>
-    <input type="password" id="l-password" placeholder="Enter password" />
-    <button class="btn btn-primary login-btn" onclick="doLogin()">Sign in</button>
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input type="email" id="l-email" class="form-control" placeholder="admin@company.com" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input type="password" id="l-password" class="form-control" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-primary login-btn" onclick="doLogin()">Sign In</button>
     <div id="login-error" style="display:none" class="error-msg"></div>
   </div>
 </div>
 
+<!-- APP -->
 <div id="app" style="display:none">
   <aside>
-    <div class="sidebar-logo">
-      <div class="logo-mark">IP</div>
-      <div><div class="logo-name">InspectPro</div><div class="logo-tag">Admin Dashboard</div></div>
+    <div class="sb-logo">
+      <div class="sb-mark">IP</div>
+      <div><div class="sb-name">InspectPro</div><div class="sb-tag">Admin Dashboard</div></div>
     </div>
-    <nav>
-      <div class="nav-section">Main</div>
-      <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">Home</span> Dashboard</div>
-      <div class="nav-item" onclick="showPage('inspections')"><span class="icon">List</span> Inspections</div>
-      <div class="nav-item" onclick="showPage('agents')"><span class="icon">User</span> Agents</div>
-      <div class="nav-item" onclick="showPage('companies')"><span class="icon">Biz</span> Companies</div>
-      <div class="nav-section">Settings</div>
-      <div class="nav-item" onclick="showPage('company')"><span class="icon">Set</span> My Company</div>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="user-info">
-        <div class="user-avatar" id="nav-avatar">?</div>
-        <div><div class="user-name" id="nav-name">Loading</div><div class="user-role" id="nav-role">role</div></div>
+    <nav id="sidebar-nav"></nav>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar" id="nav-avatar">?</div>
+        <div><div class="sb-uname" id="nav-name">Loading</div><div class="sb-urole" id="nav-role">role</div></div>
       </div>
-      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
     </div>
   </aside>
 
   <main>
+    <!-- DASHBOARD -->
     <div id="page-dashboard" class="page active">
-      <div class="topbar"><div><h1>Dashboard</h1><div class="sub" id="dash-greeting">Welcome back</div></div><button class="btn btn-primary" onclick="showPage('inspections')">View All Inspections</button></div>
-      <div class="stats-grid" id="stats-grid"><div class="loading"><div class="spinner"></div><br>Loading</div></div>
+      <div class="topbar"><div><h1>Dashboard</h1><div class="sub" id="dash-greeting">Welcome back</div></div></div>
+      <div class="stats-grid" id="stats-grid"><div class="loading"><div class="spinner"></div></div></div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Recent Inspections</span></div>
-        <table><thead><tr><th>Insured</th><th>Registration</th><th>Make</th><th>Agent</th><th>Status</th><th>Date</th><th></th></tr></thead>
+        <div class="card-header"><span class="card-title">Recent Inspections</span><button class="btn btn-outline btn-sm" onclick="showPage('inspections')">View All</button></div>
+        <table><thead><tr><th>Insured</th><th>Reg. No.</th><th>Make</th><th>Agent</th><th>Status</th><th>Date</th><th></th></tr></thead>
         <tbody id="recent-tbody"><tr><td colspan="7" class="loading">Loading</td></tr></tbody></table>
       </div>
     </div>
 
+    <!-- INSPECTIONS -->
     <div id="page-inspections" class="page">
       <div class="topbar"><div><h1>Inspections</h1><div class="sub" id="insp-count">Loading</div></div></div>
       <div class="card">
         <div class="filters">
-          <input type="text" class="search-input" id="insp-search" placeholder="Search by name or reg no" oninput="debounceSearch()" />
+          <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="insp-search" placeholder="Search by name, reg no, report no" oninput="debounceSearch()"/></div>
           <select id="insp-status" onchange="loadInspections()">
-            <option value="">All statuses</option>
+            <option value="">All Statuses</option>
             <option value="draft">Draft</option>
             <option value="submitted">Submitted</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
-        <table><thead><tr><th>Report No.</th><th>Insured</th><th>Reg. No.</th><th>Make</th><th>Value (PKR)</th><th>Agent</th><th>Status</th><th>Date</th><th></th></tr></thead>
+        <table><thead><tr><th>Report No.</th><th>Insured</th><th>Reg. No.</th><th>Make / Model</th><th>Market Value</th><th>Agent</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
         <tbody id="insp-tbody"><tr><td colspan="9" class="loading"><div class="spinner"></div></td></tr></tbody></table>
-        <div id="insp-pagination" style="padding:14px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text-mid)"></div>
+        <div class="pagination" id="insp-pagination"></div>
       </div>
     </div>
 
+    <!-- AGENTS -->
     <div id="page-agents" class="page">
       <div class="topbar"><div><h1>Field Agents</h1><div class="sub">Manage your inspection team</div></div><button class="btn btn-primary" onclick="openNewAgentModal()">+ Add Agent</button></div>
       <div class="card">
@@ -177,45 +249,105 @@ textarea{height:80px;resize:vertical}
       </div>
     </div>
 
+    <!-- COMPANIES (super admin only) -->
     <div id="page-companies" class="page">
       <div class="topbar"><div><h1>Companies</h1><div class="sub">All survey companies on the platform</div></div><button class="btn btn-primary" onclick="openNewCompanyModal()">+ Add Company</button></div>
       <div class="card">
-        <table><thead><tr><th>Company</th><th>Email</th><th>Agents</th><th>Inspections</th><th>Status</th><th></th></tr></thead>
-        <tbody id="companies-tbody"><tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr></tbody></table>
+        <table><thead><tr><th>Company Name</th><th>Email</th><th>Phone</th><th>Agents</th><th>Inspections</th><th>Subscription</th><th>Status</th><th></th></tr></thead>
+        <tbody id="companies-tbody"><tr><td colspan="8" class="loading"><div class="spinner"></div></td></tr></tbody></table>
       </div>
     </div>
 
-    <div id="page-company" class="page">
-      <div class="topbar"><div><h1>Company Settings</h1><div class="sub">Branding and configuration</div></div><button class="btn btn-primary" onclick="saveCompany()">Save Changes</button></div>
-      <div class="card" style="max-width:600px">
-        <div class="card-header"><span class="card-title">Company Details</span></div>
-        <div style="padding:24px">
-          <label>Company Name</label><input type="text" id="co-name" />
-          <label>Phone</label><input type="tel" id="co-phone" />
-          <label>Address</label><textarea id="co-address"></textarea>
-          <label>PDF Report Brand Color (hex)</label><input type="text" id="co-color" placeholder="#1a56db" />
-          <label>PDF Footer Text</label><textarea id="co-footer"></textarea>
-          <div id="co-msg" style="margin-top:14px;display:none"></div>
+    <!-- BRANDING (company admin only) -->
+    <div id="page-branding" class="page">
+      <div class="topbar"><div><h1>Report Branding</h1><div class="sub">Customize your PDF report appearance</div></div><button class="btn btn-primary" onclick="saveBranding()">Save Changes</button></div>
+      <div class="card" style="max-width:560px">
+        <div class="card-header"><span class="card-title">PDF Report Settings</span></div>
+        <div style="padding:22px">
+          <div class="form-group">
+            <label class="form-label">Company Name (read only)</label>
+            <input type="text" id="br-name" class="form-control" readonly/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Report Header Color</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="color" id="br-color-picker" style="width:48px;height:38px;border-radius:7px;border:1.5px solid var(--border);cursor:pointer;padding:2px" oninput="document.getElementById('br-color').value=this.value"/>
+              <input type="text" id="br-color" class="form-control" placeholder="#1a56db" oninput="document.getElementById('br-color-picker').value=this.value" style="flex:1"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PDF Footer Text</label>
+            <textarea id="br-footer" class="form-control" placeholder="e.g. This report is prepared based on visual inspection only..."></textarea>
+          </div>
+          <div id="br-msg" style="display:none;margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHANGE PASSWORD -->
+    <div id="page-password" class="page">
+      <div class="topbar"><div><h1>Change Password</h1><div class="sub">Update your account password</div></div></div>
+      <div class="card" style="max-width:460px">
+        <div style="padding:22px">
+          <div class="form-group"><label class="form-label">Current Password</label><input type="password" id="pw-current" class="form-control" placeholder="Current password"/></div>
+          <div class="form-group"><label class="form-label">New Password</label><input type="password" id="pw-new" class="form-control" placeholder="Min 8 characters"/></div>
+          <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" id="pw-confirm" class="form-control" placeholder="Repeat new password"/></div>
+          <div id="pw-msg" style="display:none;margin-top:12px"></div>
+          <button class="btn btn-primary" onclick="changePassword()" style="margin-top:8px">Update Password</button>
         </div>
       </div>
     </div>
   </main>
 </div>
 
-<!-- Company Modal -->
+<!-- INSPECTION DETAIL MODAL -->
+<div class="modal-overlay" id="insp-modal" style="display:none" onclick="if(event.target===this)closeModal('insp-modal')">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="insp-modal-title">Inspection Detail</span>
+      <button class="modal-close" onclick="closeModal('insp-modal')">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="insp-modal-body"><div class="loading"><div class="spinner"></div></div></div>
+    <div class="modal-footer" id="insp-modal-footer"></div>
+  </div>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="modal-overlay" id="reject-modal" style="display:none" onclick="if(event.target===this)closeModal('reject-modal')">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Reject Inspection</span><button class="modal-close" onclick="closeModal('reject-modal')">&#x2715;</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px">Please provide a reason for rejection. The field agent will see this comment.</p>
+      <div class="form-group">
+        <label class="form-label">Rejection Reason <span style="color:var(--danger)">*</span></label>
+        <textarea id="reject-comment" class="form-control" style="height:100px" placeholder="e.g. Photos are unclear, please retake and resubmit. Odometer reading is missing."></textarea>
+      </div>
+      <div id="reject-error" style="display:none" class="error-msg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('reject-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmReject()">Reject Inspection</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPANY MODAL (super admin) -->
 <div class="modal-overlay" id="new-company-modal" style="display:none" onclick="if(event.target===this)closeModal('new-company-modal')">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">Add New Company</span><button class="modal-close" onclick="closeModal('new-company-modal')">x</button></div>
+    <div class="modal-header"><span class="modal-title">Add New Company</span><button class="modal-close" onclick="closeModal('new-company-modal')">&#x2715;</button></div>
     <div class="modal-body">
-      <label>Company Name</label><input type="text" id="co-new-name" placeholder="e.g. Prism Surveyors" />
-      <label>Company Email</label><input type="email" id="co-new-email" placeholder="info@company.com" />
-      <label>Company Phone</label><input type="tel" id="co-new-phone" placeholder="0300-1234567" />
-      <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
-      <p style="font-size:12px;color:var(--text-mid);margin-bottom:8px">Company Admin Account</p>
-      <label>Admin Full Name</label><input type="text" id="co-new-admin-name" placeholder="Muhammad Ali" />
-      <label>Admin Email</label><input type="email" id="co-new-admin-email" placeholder="admin@company.com" />
-      <label>Admin Password</label><input type="password" id="co-new-admin-pw" placeholder="min 8 chars" />
-      <div id="co-new-error" style="display:none;margin-top:12px" class="error-msg"></div>
+      <div class="form-section-title">Company Information</div>
+      <div class="form-group"><label class="form-label">Registered Company Name</label><input type="text" id="co-name" class="form-control" placeholder="e.g. Prism Surveyors Pvt. Ltd."/></div>
+      <div class="form-group"><label class="form-label">Company Email</label><input type="email" id="co-email" class="form-control" placeholder="info@company.com"/></div>
+      <div class="form-group"><label class="form-label">Company Phone</label><input type="tel" id="co-phone" class="form-control" placeholder="0300-1234567"/></div>
+      <div class="form-group"><label class="form-label">NTN (optional)</label><input type="text" id="co-ntn" class="form-control" placeholder="National Tax Number"/></div>
+      <div class="form-group"><label class="form-label">Address</label><textarea id="co-address" class="form-control"></textarea></div>
+      <hr class="form-divider">
+      <div class="form-section-title">Company Admin Account</div>
+      <div class="form-group"><label class="form-label">Admin Full Name</label><input type="text" id="co-admin-name" class="form-control" placeholder="Muhammad Ali"/></div>
+      <div class="form-group"><label class="form-label">Admin Email</label><input type="email" id="co-admin-email" class="form-control" placeholder="admin@company.com"/></div>
+      <div class="form-group"><label class="form-label">Temporary Password</label><input type="password" id="co-admin-pw" class="form-control" placeholder="Min 8 characters"/></div>
+      <div id="co-error" style="display:none;margin-top:12px" class="error-msg"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('new-company-modal')">Cancel</button>
@@ -224,31 +356,22 @@ textarea{height:80px;resize:vertical}
   </div>
 </div>
 
-<!-- Agent Modal -->
+<!-- AGENT MODAL -->
 <div class="modal-overlay" id="new-agent-modal" style="display:none" onclick="if(event.target===this)closeModal('new-agent-modal')">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">Add New Agent</span><button class="modal-close" onclick="closeModal('new-agent-modal')">x</button></div>
+    <div class="modal-header"><span class="modal-title">Add New Agent</span><button class="modal-close" onclick="closeModal('new-agent-modal')">&#x2715;</button></div>
     <div class="modal-body">
-      <label>Full Name</label><input type="text" id="ag-name" placeholder="Muhammad Ali" />
-      <label>Email</label><input type="email" id="ag-email" placeholder="agent@company.com" />
-      <label>Temporary Password</label><input type="password" id="ag-pw" placeholder="min 8 chars" />
-      <label>Phone</label><input type="tel" id="ag-phone" placeholder="0300-1234567" />
-      <label>CNIC</label><input type="text" id="ag-cnic" placeholder="XXXXX-XXXXXXX-X" />
+      <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="ag-name" class="form-control" placeholder="Muhammad Ali"/></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" id="ag-email" class="form-control" placeholder="agent@company.com"/></div>
+      <div class="form-group"><label class="form-label">Temporary Password</label><input type="password" id="ag-pw" class="form-control" placeholder="Min 8 characters"/></div>
+      <div class="form-group"><label class="form-label">Phone</label><input type="tel" id="ag-phone" class="form-control" placeholder="0300-1234567"/></div>
+      <div class="form-group"><label class="form-label">CNIC</label><input type="text" id="ag-cnic" class="form-control" placeholder="XXXXX-XXXXXXX-X"/></div>
       <div id="ag-error" style="display:none;margin-top:12px" class="error-msg"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('new-agent-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="createAgent()">Create Agent</button>
     </div>
-  </div>
-</div>
-
-<!-- Inspection Modal -->
-<div class="modal-overlay" id="insp-modal" style="display:none" onclick="if(event.target===this)closeModal('insp-modal')">
-  <div class="modal" style="max-width:640px">
-    <div class="modal-header"><span class="modal-title" id="insp-modal-title">Inspection</span><button class="modal-close" onclick="closeModal('insp-modal')">x</button></div>
-    <div class="modal-body" id="insp-modal-body">Loading</div>
-    <div class="modal-footer" id="insp-modal-footer"></div>
   </div>
 </div>
 
@@ -259,11 +382,11 @@ var currentUser = null;
 var inspSkip = 0;
 var INSP_LIMIT = 25;
 var searchTimer = null;
+var rejectingId = null;
 
-if (token) {
-  axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
-}
+if (token) { axios.defaults.headers.common['Authorization'] = 'Bearer ' + token; }
 
+// ── AUTH ──────────────────────────────────────────────────────
 function doLogin() {
   var email = document.getElementById('l-email').value.trim();
   var pw = document.getElementById('l-password').value;
@@ -279,14 +402,11 @@ function doLogin() {
       axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
       initApp();
     })
-    .catch(function() {
-      errEl.textContent = 'Invalid email or password.';
-      errEl.style.display = 'block';
-    });
+    .catch(function() { errEl.textContent = 'Invalid email or password.'; errEl.style.display = 'block'; });
 }
 
 function doLogout() {
-  token = null;
+  token = null; currentUser = null;
   localStorage.removeItem('ip_token');
   delete axios.defaults.headers.common['Authorization'];
   document.getElementById('login-page').style.display = 'flex';
@@ -297,11 +417,12 @@ function initApp() {
   axios.get(API + '/auth/me')
     .then(function(res) {
       currentUser = res.data;
-      document.getElementById('nav-name').textContent = currentUser.full_name;
-      document.getElementById('nav-role').textContent = currentUser.role.replace('_', ' ');
-      var initials = currentUser.full_name.split(' ').map(function(n) { return n[0]; }).join('').slice(0,2).toUpperCase();
+      var initials = currentUser.full_name.split(' ').map(function(n){ return n[0]; }).join('').slice(0,2).toUpperCase();
       document.getElementById('nav-avatar').textContent = initials;
+      document.getElementById('nav-name').textContent = currentUser.full_name;
+      document.getElementById('nav-role').textContent = currentUser.role.replace(/_/g,' ');
       document.getElementById('dash-greeting').textContent = 'Welcome back, ' + currentUser.full_name.split(' ')[0];
+      buildNav();
       document.getElementById('login-page').style.display = 'none';
       document.getElementById('app').style.display = 'flex';
       showPage('dashboard');
@@ -309,67 +430,102 @@ function initApp() {
     .catch(function() { doLogout(); });
 }
 
+function buildNav() {
+  var role = currentUser.role;
+  var nav = '';
+  nav += '<div class="nav-section">Main</div>';
+  nav += navItem('dashboard', '📊', 'Dashboard');
+  nav += navItem('inspections', '📋', 'Inspections');
+  nav += navItem('agents', '👤', 'Agents');
+  if (role === 'super_admin') {
+    nav += navItem('companies', '🏢', 'Companies');
+  }
+  nav += '<div class="nav-section">Account</div>';
+  if (role === 'company_admin') {
+    nav += navItem('branding', '🎨', 'Report Branding');
+  }
+  nav += navItem('password', '🔑', 'Change Password');
+  document.getElementById('sidebar-nav').innerHTML = nav;
+}
+
+function navItem(page, icon, label) {
+  return '<div class="nav-item" id="nav-' + page + '" onclick="showPage(\'' + page + '\')">' +
+    '<span class="nav-icon">' + icon + '</span>' + label + '</div>';
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────
 function showPage(name) {
-  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
   var page = document.getElementById('page-' + name);
   if (page) page.classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(function(n) {
-    if (n.textContent.toLowerCase().indexOf(name.substring(0,4)) >= 0) n.classList.add('active');
-  });
-  if (name === 'dashboard') loadDashboard();
+  var navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  if (name === 'dashboard')   loadDashboard();
   if (name === 'inspections') { inspSkip = 0; loadInspections(); }
-  if (name === 'agents') loadAgents();
-  if (name === 'company') loadCompany();
-  if (name === 'companies') loadCompanies();
+  if (name === 'agents')      loadAgents();
+  if (name === 'companies')   loadCompanies();
+  if (name === 'branding')    loadBranding();
 }
 
+// ── DASHBOARD ─────────────────────────────────────────────────
 function loadDashboard() {
-  axios.get(API + '/dashboard/stats').then(function(sr) {
-    var s = sr.data;
+  axios.get(API + '/dashboard/stats').then(function(r) {
+    var s = r.data;
     var defs = [
-      { label:'Total Inspections', value:s.total_inspections, icon:'📋', color:'#1a56db' },
-      { label:'This Month', value:s.this_month, icon:'📅', color:'#0ea5e9' },
-      { label:'Submitted', value:s.submitted, icon:'⏳', color:'#d97706' },
-      { label:'Approved', value:s.approved, icon:'✅', color:'#16a34a' },
-      { label:'Active Agents', value:s.active_agents, icon:'👤', color:'#7c3aed' }
+      { label:'Total', value:s.total_inspections, icon:'📋', c:'#1a56db', ci:'#eff4ff' },
+      { label:'This Month', value:s.this_month, icon:'📅', c:'#0ea5e9', ci:'#e0f2fe' },
+      { label:'Submitted', value:s.submitted, icon:'⏳', c:'#d97706', ci:'#fef3c7' },
+      { label:'Approved', value:s.approved, icon:'✅', c:'#16a34a', ci:'#dcfce7' },
+      { label:'Rejected', value:s.rejected||0, icon:'❌', c:'#dc2626', ci:'#fee2e2' },
     ];
+    if (s.active_agents != null) defs.push({ label:'Active Agents', value:s.active_agents, icon:'👤', c:'#7c3aed', ci:'#ede9fe' });
+    if (s.total_companies != null) defs.push({ label:'Companies', value:s.total_companies, icon:'🏢', c:'#0891b2', ci:'#cffafe' });
     document.getElementById('stats-grid').innerHTML = defs.map(function(d) {
-      return '<div class="stat-card" style="--accent-color:' + d.color + '"><div class="stat-icon" style="background:' + d.color + '20">' + d.icon + '</div><div class="stat-value">' + (d.value != null ? d.value : 0) + '</div><div class="stat-label">' + d.label + '</div></div>';
+      return '<div class="stat-card" style="--c:' + d.c + '"><div class="stat-icon" style="background:' + d.ci + '">' + d.icon + '</div><div class="stat-value">' + (d.value != null ? d.value : 0) + '</div><div class="stat-label">' + d.label + '</div></div>';
     }).join('');
-  }).catch(function(e) { console.error(e); });
+  }).catch(function(e){ console.error(e); });
 
-  axios.get(API + '/inspections/', { params: { limit: 10 } }).then(function(res) {
+  axios.get(API + '/inspections/', { params: { limit: 8 } }).then(function(res) {
     var items = res.data.items || [];
     document.getElementById('recent-tbody').innerHTML = items.length === 0
-      ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-lt)">No inspections yet</td></tr>'
+      ? '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No inspections yet</div></div></td></tr>'
       : items.map(function(i) {
-          return '<tr><td class="fw7">' + (i.insured_name||'—') + '</td><td class="mono">' + (i.registration_no||'—') + '</td><td>' + (i.make||'—') + '</td><td class="text-mid">' + (i.agent_name||'—') + '</td><td><span class="badge badge-' + i.status + '">' + i.status + '</span></td><td class="text-mid text-sm">' + (i.created_at ? new Date(i.created_at).toLocaleDateString() : '—') + '</td><td><button class="icon-btn" onclick="openInspectionModal(\'' + i.id + '\')">View</button></td></tr>';
+          return '<tr><td class="fw6">' + (i.insured_name||'—') + '</td><td class="mono">' + (i.registration_no||'—') + '</td><td>' + (i.make||'—') + '</td><td class="text-mid">' + (i.agent_name||'—') + '</td><td><span class="badge badge-' + i.status + '">' + i.status + '</span></td><td class="text-mid text-sm">' + fmtDate(i.created_at) + '</td><td><button class="btn btn-outline btn-sm" onclick="openInspectionModal(\'' + i.id + '\')">View</button></td></tr>';
         }).join('');
-  }).catch(function(e) { console.error(e); });
+  }).catch(function(e){ console.error(e); });
 }
 
+// ── INSPECTIONS ───────────────────────────────────────────────
 function loadInspections() {
-  var search = document.getElementById('insp-search') ? document.getElementById('insp-search').value : '';
-  var status = document.getElementById('insp-status') ? document.getElementById('insp-status').value : '';
-  axios.get(API + '/inspections/', { params: { search: search || undefined, status: status || undefined, skip: inspSkip, limit: INSP_LIMIT } })
+  var search = (document.getElementById('insp-search')||{}).value || '';
+  var status = (document.getElementById('insp-status')||{}).value || '';
+  axios.get(API + '/inspections/', { params: { search: search||undefined, status: status||undefined, skip: inspSkip, limit: INSP_LIMIT } })
     .then(function(res) {
-      var items = res.data.items;
-      var total = res.data.total;
+      var items = res.data.items || [];
+      var total = res.data.total || 0;
       document.getElementById('insp-count').textContent = total + ' total inspections';
       document.getElementById('insp-tbody').innerHTML = items.length === 0
-        ? '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-lt)">No inspections found</td></tr>'
+        ? '<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No inspections found</div><div class="empty-sub">Try a different search or filter</div></div></td></tr>'
         : items.map(function(i) {
-            var actions = '<button class="icon-btn" onclick="openInspectionModal(\'' + i.id + '\')">View</button>';
-            if (i.status === 'submitted') actions += '<button class="icon-btn" onclick="approveInspection(\'' + i.id + '\')" style="color:var(--success)">Approve</button>';
-            if (i.pdf_url) actions += '<button class="icon-btn" onclick="downloadPdf(\'' + i.id + '\')">PDF</button>';
-            else actions += '<button class="icon-btn" onclick="genPdf(\'' + i.id + '\')">Gen PDF</button>';
-            return '<tr><td class="mono text-sm">' + (i.report_number||'—') + '</td><td class="fw7">' + (i.insured_name||'—') + '</td><td class="mono">' + (i.registration_no||'—') + '</td><td>' + ((i.make||'') + ' ' + (i.model_variant||'')).trim() + '</td><td>' + (i.market_value ? Number(i.market_value).toLocaleString() : '—') + '</td><td class="text-mid">' + (i.agent_name||'—') + '</td><td><span class="badge badge-' + i.status + '">' + i.status + '</span></td><td class="text-mid text-sm">' + (i.created_at ? new Date(i.created_at).toLocaleDateString() : '—') + '</td><td class="actions-cell">' + actions + '</td></tr>';
+            var actions = '<button class="btn btn-outline btn-sm" onclick="openInspectionModal(\'' + i.id + '\')">View</button>';
+            if (i.status === 'submitted') {
+              actions += ' <button class="btn btn-success btn-sm" onclick="approveInspection(\'' + i.id + '\')">Approve</button>';
+              actions += ' <button class="btn btn-danger btn-sm" onclick="openRejectModal(\'' + i.id + '\')">Reject</button>';
+            }
+            if (i.pdf_url) actions += ' <button class="btn btn-outline btn-sm" onclick="downloadPdf(\'' + i.id + '\')">PDF</button>';
+            else actions += ' <button class="btn btn-outline btn-sm" onclick="genPdf(\'' + i.id + '\')">Gen PDF</button>';
+            return '<tr><td class="mono">' + (i.report_number||'—') + '</td><td class="fw6">' + (i.insured_name||'—') + '</td><td class="mono">' + (i.registration_no||'—') + '</td><td>' + [(i.make||''),(i.model_variant||'')].filter(Boolean).join(' ') + '</td><td>' + (i.market_value ? 'PKR ' + Number(i.market_value).toLocaleString() : '—') + '</td><td class="text-mid">' + (i.agent_name||'—') + '</td><td><span class="badge badge-' + i.status + '">' + i.status + '</span></td><td class="text-sm text-mid">' + fmtDate(i.created_at) + '</td><td class="actions-cell">' + actions + '</td></tr>';
           }).join('');
-      var pages = Math.ceil(total / INSP_LIMIT);
+      var pages = Math.ceil(total / INSP_LIMIT) || 1;
       var curr = Math.floor(inspSkip / INSP_LIMIT) + 1;
-      document.getElementById('insp-pagination').innerHTML = '<span>Page ' + curr + ' of ' + (pages||1) + ' - ' + total + ' records</span><span style="display:flex;gap:8px">' + (curr > 1 ? '<button class="btn btn-outline" onclick="inspSkip=Math.max(0,inspSkip-' + INSP_LIMIT + ');loadInspections()">Prev</button>' : '') + (curr < pages ? '<button class="btn btn-outline" onclick="inspSkip+=' + INSP_LIMIT + ';loadInspections()">Next</button>' : '') + '</span>';
-    }).catch(function(e) { console.error(e); });
+      document.getElementById('insp-pagination').innerHTML =
+        '<span>Page ' + curr + ' of ' + pages + ' &mdash; ' + total + ' records</span>' +
+        '<span style="display:flex;gap:8px">' +
+        (curr > 1 ? '<button class="btn btn-outline btn-sm" onclick="inspSkip=Math.max(0,inspSkip-' + INSP_LIMIT + ');loadInspections()">&#8592; Prev</button>' : '') +
+        (curr < pages ? '<button class="btn btn-outline btn-sm" onclick="inspSkip+=' + INSP_LIMIT + ';loadInspections()">Next &#8594;</button>' : '') +
+        '</span>';
+    }).catch(function(e){ console.error(e); });
 }
 
 function debounceSearch() {
@@ -378,45 +534,169 @@ function debounceSearch() {
   searchTimer = setTimeout(loadInspections, 350);
 }
 
+// ── INSPECTION DETAIL MODAL ───────────────────────────────────
 function openInspectionModal(id) {
   document.getElementById('insp-modal').style.display = 'flex';
-  document.getElementById('insp-modal-body').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  axios.get(API + '/inspections/' + id)
-    .then(function(res) {
-      var i = res.data;
-      document.getElementById('insp-modal-title').textContent = i.report_number || 'Inspection Detail';
-      document.getElementById('insp-modal-body').innerHTML =
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px">' +
-        fld('Insured', i.insured_name) + fld('Contact', i.insured_contact) +
-        fld('CNIC', i.insured_cnic) + fld('Insurer', i.insurer_name) +
-        fld('Make', i.make) + fld('Variant', i.model_variant) +
-        fld('Reg No', i.registration_no) + fld('Engine CC', i.engine_cc) +
-        fld('Mfg Year', i.manufacturing_year) + fld('Color', i.color) +
-        fld('Odometer', i.odometer_reading ? i.odometer_reading.toLocaleString() + ' km' : null) + fld('Body Type', i.body_type) +
-        fld('Market Value', i.market_value ? 'PKR ' + Number(i.market_value).toLocaleString() : null) + fld('Agent', i.agent_name) +
-        '</div><hr style="margin:16px 0;border:none;border-top:1px solid var(--border)"><div><strong>Damages:</strong> ' +
-        (!i.damages || i.damages.length === 0 ? '<span style="color:var(--success)">None</span>' : i.damages.map(function(d) { return d.part + ' - ' + d.type + ' (' + d.severity + ')'; }).join(', ')) +
-        '</div><div style="margin-top:8px"><strong>Accessories:</strong> ' + ((i.factory_accessories||[]).join(', ') || '—') + '</div>';
-      document.getElementById('insp-modal-footer').innerHTML =
-        '<button class="btn btn-outline" onclick="closeModal(\'insp-modal\')">Close</button>' +
-        (i.status === 'submitted' ? '<button class="btn btn-primary" onclick="approveInspection(\'' + id + '\');closeModal(\'insp-modal\')">Approve</button>' : '') +
-        '<button class="btn btn-outline" onclick="genPdf(\'' + id + '\')">Generate PDF</button>';
-    }).catch(function() { document.getElementById('insp-modal-body').textContent = 'Error loading inspection.'; });
+  document.getElementById('insp-modal-body').innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading inspection details...</div>';
+  document.getElementById('insp-modal-footer').innerHTML = '';
+  axios.get(API + '/inspections/' + id).then(function(res) {
+    var i = res.data;
+    document.getElementById('insp-modal-title').textContent = (i.report_number || 'Inspection') + ' — ' + (i.insured_name || '');
+    var damages = i.damages || [];
+    var photos = i.photos || [];
+    var docs = i.documents_received || {};
+    var html = '';
+
+    // Status banner
+    var statusColor = { draft:'#f1f5f9', submitted:'#dbeafe', approved:'#dcfce7', rejected:'#fee2e2' };
+    var statusText  = { draft:'#475569', submitted:'#1e40af', approved:'#166534', rejected:'#991b1b' };
+    html += '<div style="background:' + (statusColor[i.status]||'#f1f5f9') + ';border-radius:8px;padding:10px 14px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">';
+    html += '<span style="font-weight:700;font-size:13px;color:' + (statusText[i.status]||'#475569') + '">Status: ' + i.status.toUpperCase() + '</span>';
+    html += '<span class="text-sm text-mid">Agent: ' + (i.agent_name||'—') + '</span></div>';
+
+    // Rejection reason
+    if (i.status === 'rejected' && i.rejection_comment) {
+      html += '<div class="rejection-box"><div class="rejection-label">Rejection Reason</div><div class="rejection-text">' + i.rejection_comment + '</div></div>';
+      html += '<div style="margin-bottom:18px"></div>';
+    }
+
+    // Proposal
+    html += '<div class="detail-section"><div class="detail-section-title">Proposal Details</div><div class="detail-grid">';
+    html += df('Insurer', i.insurer_name) + df('Branch', i.branch_name) + df('Underwriter', i.underwriter_name) + df('Request Date', fmtDate(i.request_date));
+    html += df('Insured Name', i.insured_name) + df('Contact No.', i.insured_contact) + df('CNIC', i.insured_cnic);
+    html += '</div><div class="detail-field"><div class="detail-label">Address</div><div class="detail-value">' + (i.insured_address||'—') + '</div></div></div>';
+
+    // Vehicle
+    html += '<div class="detail-section"><div class="detail-section-title">Vehicle Details</div><div class="detail-grid">';
+    html += df('Manufacturer', i.manufacturer) + df('Make / Model', i.make) + df('Variant', i.model_variant) + df('Engine CC', i.engine_cc);
+    html += df('Registration No.', i.registration_no) + df('Reg. Year', i.registration_year) + df('Mfg. Year', i.manufacturing_year);
+    html += df('Engine No.', i.engine_no) + df('Chassis No.', i.chassis_no) + df('Color', i.color);
+    html += df('Odometer', i.odometer_reading ? Number(i.odometer_reading).toLocaleString() + ' km' : null);
+    html += df('Body Type', i.body_type) + df('Usage', i.usage_type) + df('Assembly', i.assembly);
+    html += '</div></div>';
+
+    // Accessories
+    html += '<div class="detail-section"><div class="detail-section-title">Accessories</div>';
+    html += '<div class="detail-label" style="margin-bottom:6px">Factory Fitted</div>';
+    html += '<div>' + ((i.factory_accessories||[]).length === 0 ? '<span style="color:var(--text-lt);font-size:13px">None</span>' : (i.factory_accessories||[]).map(function(a){ return '<span class="tag">' + a + '</span>'; }).join('')) + '</div>';
+    html += '<div class="detail-label" style="margin-top:10px;margin-bottom:6px">Additional / Aftermarket</div>';
+    html += '<div>' + ((i.additional_accessories||[]).length === 0 ? '<span style="color:var(--text-lt);font-size:13px">None</span>' : (i.additional_accessories||[]).map(function(a){ return '<span class="tag">' + a + '</span>'; }).join('')) + '</div>';
+    if (i.accessories_notes) html += '<div style="margin-top:8px;font-size:12px;color:var(--text-mid)">' + i.accessories_notes + '</div>';
+    html += '</div>';
+
+    // Body Observations
+    html += '<div class="detail-section"><div class="detail-section-title">Body Observations</div>';
+    if (i.is_new_vehicle) {
+      html += '<div class="no-damage">✓ Brand New Vehicle — No Pre-existing Damage</div>';
+    } else if (damages.length === 0) {
+      html += '<div class="no-damage">✓ No damage or scratches observed</div>';
+    } else {
+      damages.forEach(function(d, idx) {
+        var sevColor = d.severity === 'Major' ? '#dc2626' : d.severity === 'Moderate' ? '#d97706' : '#94a3b8';
+        html += '<div class="damage-row"><div class="damage-num">' + (idx+1) + '</div><div style="flex:1"><div class="damage-part">' + (d.part||d) + '</div><div class="damage-detail">' + (d.type||'') + (d.severity ? ' &bull; ' + d.severity : '') + '</div></div><div class="severity-dot" style="background:' + sevColor + '"></div></div>';
+      });
+    }
+    html += '<div style="margin-top:10px" class="detail-grid">';
+    html += df('Missing Items', i.missing_items || 'Nil') + df('Alterations', i.alterations || 'Nil');
+    html += '</div>';
+    if (i.damage_notes) html += '<div style="margin-top:8px;background:#fffbeb;border-left:3px solid #f59e0b;padding:8px 10px;border-radius:5px;font-size:12px;color:var(--text-mid)">' + i.damage_notes + '</div>';
+    html += '</div>';
+
+    // Valuation
+    html += '<div class="detail-section"><div class="detail-section-title">Insured Estimate Values</div>';
+    html += '<div class="valuation-box"><div class="valuation-label">Current Market Value</div><div class="valuation-amount">' + (i.market_value ? 'PKR ' + Number(i.market_value).toLocaleString() : '—') + '</div></div>';
+    if (i.additional_accessories_value > 0) {
+      html += '<div class="detail-field"><div class="detail-label">Additional Accessories Value</div><div class="detail-value">PKR ' + Number(i.additional_accessories_value).toLocaleString() + '</div></div>';
+    }
+    html += '</div>';
+
+    // Photos
+    if (photos.length > 0) {
+      html += '<div class="detail-section"><div class="detail-section-title">Inspection Photos (' + photos.length + ')</div><div class="photos-grid">';
+      photos.forEach(function(p) {
+        var src = p.url && p.url.startsWith('http') ? p.url : 'https://inspectpro-api.fly.dev' + (p.url||'');
+        html += '<div class="photo-item"><img src="' + src + '" alt="' + (p.caption||'Photo') + '" onclick="window.open(\'' + src + '\',\'_blank\')"/><div class="photo-caption">' + (p.caption||p.photo_type||'') + '</div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    // Documents
+    html += '<div class="detail-section"><div class="detail-section-title">Documents Received</div>';
+    var docList = [['reg_book','Registration Book'],['sale_invoice','Sale Invoice (New Vehicle)'],['cnic','CNIC of Insured'],['import_docs','Import Documents'],['bill_of_entry','Bill of Entry / Lading']];
+    docList.forEach(function(d) {
+      var received = docs[d[0]];
+      html += '<div class="doc-row"><span class="' + (received ? 'check-yes' : 'check-no') + '">' + (received ? '✓' : '✗') + '</span>' + d[1] + '</div>';
+    });
+    html += '</div>';
+
+    // Surveyor
+    html += '<div class="detail-section"><div class="detail-section-title">Surveyor Details</div><div class="detail-grid">';
+    html += df('Surveyor Name', i.agent_name) + df('Place of Inspection', i.inspection_place) + df('Date & Time', fmtDateTime(i.inspection_date));
+    html += '</div>';
+    if (i.surveyor_remarks) html += '<div style="margin-top:8px;font-style:italic;font-size:12px;color:var(--text-mid)">Remarks: ' + i.surveyor_remarks + '</div>';
+    html += '</div>';
+
+    html += '<p style="font-size:11px;color:var(--text-lt);text-align:center;margin-top:8px">ISSUED WITHOUT PREJUDICE</p>';
+
+    document.getElementById('insp-modal-body').innerHTML = html;
+
+    // Footer actions
+    var footer = '<button class="btn btn-outline" onclick="closeModal(\'insp-modal\')">Close</button>';
+    if (i.status === 'submitted') {
+      footer += '<button class="btn btn-danger" onclick="openRejectModal(\'' + id + '\');closeModal(\'insp-modal\')">Reject</button>';
+      footer += '<button class="btn btn-success" onclick="approveInspection(\'' + id + '\');closeModal(\'insp-modal\')">Approve</button>';
+    }
+    footer += '<button class="btn btn-primary" onclick="genAndDownloadPdf(\'' + id + '\')">Generate & Download PDF</button>';
+    document.getElementById('insp-modal-footer').innerHTML = footer;
+  }).catch(function(e) {
+    document.getElementById('insp-modal-body').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-title">Could not load inspection</div></div>';
+    console.error(e);
+  });
 }
 
-function fld(label, value) {
-  return '<div><div style="font-size:11px;color:var(--text-mid);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">' + label + '</div><div style="font-size:14px;font-weight:500">' + (value || '—') + '</div></div>';
+function df(label, value) {
+  return '<div class="detail-field"><div class="detail-label">' + label + '</div><div class="detail-value">' + (value||'—') + '</div></div>';
 }
 
+// ── APPROVE / REJECT ──────────────────────────────────────────
 function approveInspection(id) {
+  if (!confirm('Approve this inspection?')) return;
   axios.post(API + '/inspections/' + id + '/approve')
-    .then(function() { loadInspections(); alert('Inspection approved'); })
+    .then(function() { loadInspections(); loadDashboard(); alert('Inspection approved successfully.'); })
     .catch(function(e) { alert('Error: ' + (e.response && e.response.data ? e.response.data.detail : e.message)); });
 }
 
+function openRejectModal(id) {
+  rejectingId = id;
+  document.getElementById('reject-comment').value = '';
+  document.getElementById('reject-error').style.display = 'none';
+  document.getElementById('reject-modal').style.display = 'flex';
+}
+
+function confirmReject() {
+  var comment = document.getElementById('reject-comment').value.trim();
+  var errEl = document.getElementById('reject-error');
+  if (!comment) { errEl.textContent = 'Please enter a rejection reason.'; errEl.style.display = 'block'; return; }
+  axios.post(API + '/inspections/' + rejectingId + '/reject', { comment: comment })
+    .then(function() {
+      closeModal('reject-modal');
+      loadInspections();
+      loadDashboard();
+      alert('Inspection rejected. The agent has been notified.');
+    })
+    .catch(function(e) { errEl.textContent = e.response && e.response.data ? e.response.data.detail : 'Could not reject inspection.'; errEl.style.display = 'block'; });
+}
+
+// ── PDF ───────────────────────────────────────────────────────
 function genPdf(id) {
   axios.post(API + '/reports/' + id + '/generate-pdf')
-    .then(function() { alert('PDF generated! Click PDF button to download.'); loadInspections(); })
+    .then(function() { alert('PDF generated!'); loadInspections(); })
+    .catch(function(e) { alert('PDF failed: ' + (e.response && e.response.data ? JSON.stringify(e.response.data) : e.message)); });
+}
+
+function genAndDownloadPdf(id) {
+  axios.post(API + '/reports/' + id + '/generate-pdf')
+    .then(function() { downloadPdf(id); })
     .catch(function(e) { alert('PDF failed: ' + (e.response && e.response.data ? JSON.stringify(e.response.data) : e.message)); });
 }
 
@@ -427,28 +707,25 @@ function downloadPdf(id) {
     .then(function(blob) {
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
-      a.href = url;
-      a.download = 'inspection_report.pdf';
-      a.click();
+      a.href = url; a.download = 'inspection_report.pdf'; a.click();
       URL.revokeObjectURL(url);
-    })
-    .catch(function() { alert('Could not download PDF.'); });
+    }).catch(function() { alert('Could not download PDF.'); });
 }
 
+// ── AGENTS ────────────────────────────────────────────────────
 function loadAgents() {
-  axios.get(API + '/agents/')
-    .then(function(res) {
-      var agents = res.data;
-      document.getElementById('agents-tbody').innerHTML = agents.length === 0
-        ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-lt)">No agents yet.</td></tr>'
-        : agents.map(function(a) {
-            return '<tr><td class="fw7">' + a.full_name + '</td><td>' + a.email + '</td><td class="text-mid">' + (a.phone||'—') + '</td><td>' + (a.inspection_count||0) + '</td><td class="text-mid text-sm">' + (a.last_login ? new Date(a.last_login).toLocaleDateString() : 'Never') + '</td><td><span class="badge ' + (a.is_active ? 'badge-active' : 'badge-inactive') + '">' + (a.is_active ? 'Active' : 'Inactive') + '</span></td><td><button class="icon-btn" onclick="toggleAgent(\'' + a.id + '\',' + !a.is_active + ')">' + (a.is_active ? 'Deactivate' : 'Activate') + '</button></td></tr>';
-          }).join('');
-    }).catch(function(e) { console.error(e); });
+  axios.get(API + '/agents/').then(function(res) {
+    var agents = res.data;
+    document.getElementById('agents-tbody').innerHTML = agents.length === 0
+      ? '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👤</div><div class="empty-title">No agents yet</div><div class="empty-sub">Add your first field agent</div></div></td></tr>'
+      : agents.map(function(a) {
+          return '<tr><td class="fw6">' + a.full_name + '</td><td>' + a.email + '</td><td class="text-mid">' + (a.phone||'—') + '</td><td>' + (a.inspection_count||0) + '</td><td class="text-sm text-mid">' + (a.last_login ? fmtDate(a.last_login) : 'Never') + '</td><td><span class="badge ' + (a.is_active ? 'badge-active' : 'badge-inactive') + '">' + (a.is_active ? 'Active' : 'Inactive') + '</span></td><td><button class="btn btn-outline btn-sm" onclick="toggleAgent(\'' + a.id + '\',' + !a.is_active + ')">' + (a.is_active ? 'Deactivate' : 'Activate') + '</button></td></tr>';
+        }).join('');
+  }).catch(function(e){ console.error(e); });
 }
 
 function openNewAgentModal() {
-  ['ag-name','ag-email','ag-pw','ag-phone','ag-cnic'].forEach(function(id) { document.getElementById(id).value = ''; });
+  ['ag-name','ag-email','ag-pw','ag-phone','ag-cnic'].forEach(function(id){ document.getElementById(id).value = ''; });
   document.getElementById('ag-error').style.display = 'none';
   document.getElementById('new-agent-modal').style.display = 'flex';
 }
@@ -459,103 +736,110 @@ function createAgent() {
   var pw = document.getElementById('ag-pw').value;
   var errEl = document.getElementById('ag-error');
   errEl.style.display = 'none';
-  if (!name || !email || !pw) { errEl.textContent = 'Name, email and password are required.'; errEl.style.display = 'block'; return; }
-  axios.post(API + '/agents/', { full_name: name, email: email, password: pw, phone: document.getElementById('ag-phone').value || null, cnic: document.getElementById('ag-cnic').value || null })
+  if (!name||!email||!pw) { errEl.textContent = 'Name, email and password are required.'; errEl.style.display = 'block'; return; }
+  axios.post(API + '/agents/', { full_name:name, email:email, password:pw, phone:document.getElementById('ag-phone').value||null, cnic:document.getElementById('ag-cnic').value||null })
     .then(function() { closeModal('new-agent-modal'); loadAgents(); })
-    .catch(function(e) { errEl.textContent = e.response && e.response.data && e.response.data.detail ? e.response.data.detail : 'Could not create agent.'; errEl.style.display = 'block'; });
+    .catch(function(e) { errEl.textContent = e.response&&e.response.data&&e.response.data.detail ? e.response.data.detail : 'Could not create agent.'; errEl.style.display = 'block'; });
 }
 
 function toggleAgent(id, active) {
   axios.patch(API + '/agents/' + id, { is_active: active })
     .then(function() { loadAgents(); })
-    .catch(function(e) { alert('Error: ' + (e.response && e.response.data ? e.response.data.detail : e.message)); });
+    .catch(function(e) { alert('Error: ' + (e.response&&e.response.data ? e.response.data.detail : e.message)); });
 }
 
+// ── COMPANIES (super admin) ───────────────────────────────────
 function loadCompanies() {
-  axios.get(API + '/companies/')
-    .then(function(res) {
-      var companies = res.data;
-      document.getElementById('companies-tbody').innerHTML = companies.length === 0
-        ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-lt)">No companies yet.</td></tr>'
-        : companies.map(function(c) {
-            return '<tr><td class="fw7">' + c.name + '</td><td>' + c.email + '</td><td>' + (c.agent_count||0) + '</td><td>' + (c.inspection_count||0) + '</td><td><span class="badge ' + (c.is_active ? 'badge-active' : 'badge-inactive') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td><td><button class="icon-btn" onclick="toggleCompany(\'' + c.id + '\',' + !c.is_active + ')">' + (c.is_active ? 'Deactivate' : 'Activate') + '</button></td></tr>';
-          }).join('');
-    }).catch(function(e) { console.error(e); });
+  axios.get(API + '/companies/').then(function(res) {
+    var companies = res.data;
+    document.getElementById('companies-tbody').innerHTML = companies.length === 0
+      ? '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🏢</div><div class="empty-title">No companies yet</div></div></td></tr>'
+      : companies.map(function(c) {
+          return '<tr><td class="fw6">' + c.name + '</td><td>' + c.email + '</td><td class="text-mid">' + (c.phone||'—') + '</td><td>' + (c.agent_count||0) + '</td><td>' + (c.inspection_count||0) + '</td><td><span class="badge badge-draft">' + (c.subscription_tier||'starter') + '</span></td><td><span class="badge ' + (c.is_active ? 'badge-active' : 'badge-inactive') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td><td><button class="btn btn-outline btn-sm" onclick="toggleCompany(\'' + c.id + '\',' + !c.is_active + ')">' + (c.is_active ? 'Deactivate' : 'Activate') + '</button></td></tr>';
+        }).join('');
+  }).catch(function(e){ console.error(e); });
 }
 
 function openNewCompanyModal() {
-  ['co-new-name','co-new-email','co-new-phone','co-new-admin-name','co-new-admin-email','co-new-admin-pw'].forEach(function(id) { document.getElementById(id).value = ''; });
-  document.getElementById('co-new-error').style.display = 'none';
+  ['co-name','co-email','co-phone','co-ntn','co-address','co-admin-name','co-admin-email','co-admin-pw'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('co-error').style.display = 'none';
   document.getElementById('new-company-modal').style.display = 'flex';
 }
 
 function createCompany() {
-  var name = document.getElementById('co-new-name').value.trim();
-  var email = document.getElementById('co-new-email').value.trim();
-  var phone = document.getElementById('co-new-phone').value.trim();
-  var adminName = document.getElementById('co-new-admin-name').value.trim();
-  var adminEmail = document.getElementById('co-new-admin-email').value.trim();
-  var adminPw = document.getElementById('co-new-admin-pw').value;
-  var errEl = document.getElementById('co-new-error');
+  var name = document.getElementById('co-name').value.trim();
+  var email = document.getElementById('co-email').value.trim();
+  var adminName = document.getElementById('co-admin-name').value.trim();
+  var adminEmail = document.getElementById('co-admin-email').value.trim();
+  var adminPw = document.getElementById('co-admin-pw').value;
+  var errEl = document.getElementById('co-error');
   errEl.style.display = 'none';
-  if (!name || !email || !adminName || !adminEmail || !adminPw) {
-    errEl.textContent = 'All fields are required.';
-    errEl.style.display = 'block';
-    return;
-  }
-  axios.post(API + '/auth/register-company', { company_name: name, company_email: email, admin_full_name: adminName, admin_email: adminEmail, password: adminPw, phone: phone || null })
-    .then(function() {
-      closeModal('new-company-modal');
-      loadCompanies();
-      alert('Company created! Admin login: ' + adminEmail);
-    })
-    .catch(function(e) {
-      errEl.textContent = e.response && e.response.data && e.response.data.detail ? e.response.data.detail : 'Could not create company.';
-      errEl.style.display = 'block';
-    });
+  if (!name||!email||!adminName||!adminEmail||!adminPw) { errEl.textContent = 'All required fields must be filled.'; errEl.style.display = 'block'; return; }
+  axios.post(API + '/auth/register-company', { company_name:name, company_email:email, admin_full_name:adminName, admin_email:adminEmail, password:adminPw, phone:document.getElementById('co-phone').value||null })
+    .then(function() { closeModal('new-company-modal'); loadCompanies(); alert('Company created!\n\nAdmin login credentials:\nEmail: ' + adminEmail + '\nPassword: [as entered]\n\nShare these with the company admin.'); })
+    .catch(function(e) { errEl.textContent = e.response&&e.response.data&&e.response.data.detail ? e.response.data.detail : 'Could not create company.'; errEl.style.display = 'block'; });
 }
 
 function toggleCompany(id, active) {
   axios.patch(API + '/companies/' + id + '/status?active=' + active)
     .then(function() { loadCompanies(); })
-    .catch(function(e) { alert('Error: ' + (e.response && e.response.data ? e.response.data.detail : e.message)); });
+    .catch(function(e) { alert('Error: ' + (e.response&&e.response.data ? e.response.data.detail : e.message)); });
 }
 
-function loadCompany() {
-  axios.get(API + '/companies/me')
-    .then(function(res) {
-      var c = res.data;
-      document.getElementById('co-name').value = c.name || '';
-      document.getElementById('co-phone').value = c.phone || '';
-      document.getElementById('co-address').value = c.address || '';
-      document.getElementById('co-color').value = c.report_header_color || '#1a56db';
-      document.getElementById('co-footer').value = c.report_footer_text || '';
-    }).catch(function(e) { console.error(e); });
+// ── BRANDING (company admin) ──────────────────────────────────
+function loadBranding() {
+  axios.get(API + '/companies/me').then(function(res) {
+    var c = res.data;
+    document.getElementById('br-name').value = c.name || '';
+    document.getElementById('br-color').value = c.report_header_color || '#1a56db';
+    document.getElementById('br-color-picker').value = c.report_header_color || '#1a56db';
+    document.getElementById('br-footer').value = c.report_footer_text || '';
+  }).catch(function(e){ console.error(e); });
 }
 
-function saveCompany() {
-  var msgEl = document.getElementById('co-msg');
+function saveBranding() {
+  var msgEl = document.getElementById('br-msg');
   axios.patch(API + '/companies/me', {
-    name: document.getElementById('co-name').value,
-    phone: document.getElementById('co-phone').value,
-    address: document.getElementById('co-address').value,
-    report_header_color: document.getElementById('co-color').value,
-    report_footer_text: document.getElementById('co-footer').value
+    report_header_color: document.getElementById('br-color').value,
+    report_footer_text: document.getElementById('br-footer').value
   }).then(function() {
-    msgEl.style.cssText = 'display:block;background:#dcfce7;color:#166534;padding:10px 14px;border-radius:8px;margin-top:14px';
-    msgEl.textContent = 'Saved successfully.';
-    setTimeout(function() { msgEl.style.display = 'none'; }, 3000);
+    msgEl.style.cssText = 'display:block;background:#dcfce7;color:#166534;padding:10px 14px;border-radius:8px';
+    msgEl.textContent = 'Branding saved successfully.';
+    setTimeout(function(){ msgEl.style.display='none'; }, 3000);
   }).catch(function(e) {
-    msgEl.style.cssText = 'display:block;background:#fee2e2;color:var(--danger);padding:10px 14px;border-radius:8px;margin-top:14px';
-    msgEl.textContent = 'Error: ' + (e.response && e.response.data ? e.response.data.detail : e.message);
+    msgEl.style.cssText = 'display:block;background:#fee2e2;color:var(--danger);padding:10px 14px;border-radius:8px';
+    msgEl.textContent = 'Error: ' + (e.response&&e.response.data ? e.response.data.detail : e.message);
   });
 }
 
+// ── CHANGE PASSWORD ───────────────────────────────────────────
+function changePassword() {
+  var curr = document.getElementById('pw-current').value;
+  var next = document.getElementById('pw-new').value;
+  var conf = document.getElementById('pw-confirm').value;
+  var msgEl = document.getElementById('pw-msg');
+  msgEl.style.display = 'none';
+  if (next !== conf) { msgEl.style.cssText = 'display:block;background:#fee2e2;color:var(--danger);padding:10px 14px;border-radius:8px'; msgEl.textContent = 'New passwords do not match.'; return; }
+  if (next.length < 8) { msgEl.style.cssText = 'display:block;background:#fee2e2;color:var(--danger);padding:10px 14px;border-radius:8px'; msgEl.textContent = 'Password must be at least 8 characters.'; return; }
+  axios.post(API + '/auth/change-password', { current_password: curr, new_password: next })
+    .then(function() {
+      msgEl.style.cssText = 'display:block;background:#dcfce7;color:#166534;padding:10px 14px;border-radius:8px';
+      msgEl.textContent = 'Password changed successfully.';
+      document.getElementById('pw-current').value = '';
+      document.getElementById('pw-new').value = '';
+      document.getElementById('pw-confirm').value = '';
+    }).catch(function(e) {
+      msgEl.style.cssText = 'display:block;background:#fee2e2;color:var(--danger);padding:10px 14px;border-radius:8px';
+      msgEl.textContent = e.response&&e.response.data&&e.response.data.detail ? e.response.data.detail : 'Could not change password.';
+    });
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—'; }
+function fmtDateTime(d) { return d ? new Date(d).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-if (token) {
-  initApp();
-}
+if (token) { initApp(); }
 </script>
 </body>
 </html>
