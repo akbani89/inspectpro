@@ -15,47 +15,51 @@ router = APIRouter()
 
 class InspectionCreateRequest(BaseModel):
     # Proposal
-    insurer_name: Optional[str]
-    branch_name: Optional[str]
-    underwriter_name: Optional[str]
+    insurer_name: Optional[str] = None
+    branch_name: Optional[str] = None
+    underwriter_name: Optional[str] = None
     request_date: Optional[datetime] = None
-    insured_name: Optional[str]
-    insured_contact: Optional[str]
-    insured_address: Optional[str]
-    insured_cnic: Optional[str]
+    insured_name: Optional[str] = None
+    insured_contact: Optional[str] = None
+    insured_address: Optional[str] = None
+    insured_cnic: Optional[str] = None
     # Vehicle
-    manufacturer: Optional[str]
-    make: Optional[str]
-    model_variant: Optional[str]
-    engine_cc: Optional[str]
-    registration_no: Optional[str] 
+    manufacturer: Optional[str] = None
+    make: Optional[str] = None
+    model_variant: Optional[str] = None
+    engine_cc: Optional[str] = None
+    registration_no: Optional[str] = None
     registration_year: Optional[int] = None
     manufacturing_year: Optional[int] = None
-    engine_no: Optional[str]
-    chassis_no: Optional[str]
-    color: Optional[str]
+    engine_no: Optional[str] = None
+    chassis_no: Optional[str] = None
+    color: Optional[str] = None
     odometer_reading: Optional[int] = None
-    body_type: Optional[str]
+    body_type: Optional[str] = None
     usage_type: Optional[str] = "Private"
     assembly: Optional[str] = "Local Assembled"
     # Accessories
     factory_accessories: Optional[List[str]] = []
     additional_accessories: Optional[List[str]] = []
-    accessories_notes: Optional[str]
+    accessories_notes: Optional[str] = None
     # Body
     is_new_vehicle: Optional[bool] = False
     damages: Optional[List[Any]] = []
-    damage_notes: Optional[str]
-    missing_items: Optional[str]
-    alterations: Optional[str]
+    damage_notes: Optional[str] = None
+    missing_items: Optional[str] = None
+    alterations: Optional[str] = None
     # Valuation
     market_value: Optional[float] = None
     additional_accessories_value: Optional[float] = 0
     # Meta
-    inspection_place: Optional[str]
-    inspection_date: Optional[datetime]
+    inspection_place: Optional[str] = None
+    inspection_date: Optional[datetime] = None
     documents_received: Optional[Any] = {}
-    surveyor_remarks: Optional[str]
+    surveyor_remarks: Optional[str] = None
+
+
+class RejectRequest(BaseModel):
+    comment: str
 
 
 def inspection_to_dict(i: Inspection, include_photos: bool = True) -> dict:
@@ -63,6 +67,7 @@ def inspection_to_dict(i: Inspection, include_photos: bool = True) -> dict:
         "id": i.id,
         "report_number": i.report_number,
         "status": i.status,
+        "rejection_comment": i.rejection_comment,
         "agent_id": i.agent_id,
         "agent_name": i.agent.full_name if i.agent else None,
         "company_id": i.company_id,
@@ -127,12 +132,10 @@ def list_inspections(
 ):
     query = db.query(Inspection)
 
-    # Agents only see their own
     if current_user.role == UserRole.agent:
         query = query.filter(Inspection.agent_id == current_user.id)
     elif current_user.role == UserRole.company_admin:
         query = query.filter(Inspection.company_id == current_user.company_id)
-    # super_admin sees all
 
     if status:
         query = query.filter(Inspection.status == status)
@@ -231,9 +234,29 @@ def approve_inspection(
     inspection = db.query(Inspection).filter(Inspection.id == inspection_id).first()
     if not inspection:
         raise HTTPException(404, "Not found")
+    if inspection.status != InspectionStatus.submitted:
+        raise HTTPException(400, "Only submitted inspections can be approved")
     inspection.status = InspectionStatus.approved
     db.commit()
     return {"message": "Inspection approved"}
+
+
+@router.post("/{inspection_id}/reject")
+def reject_inspection(
+    inspection_id: str,
+    req: RejectRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.company_admin, UserRole.super_admin))
+):
+    inspection = db.query(Inspection).filter(Inspection.id == inspection_id).first()
+    if not inspection:
+        raise HTTPException(404, "Not found")
+    if inspection.status != InspectionStatus.submitted:
+        raise HTTPException(400, "Only submitted inspections can be rejected")
+    inspection.status = InspectionStatus.rejected
+    inspection.rejection_comment = req.comment
+    db.commit()
+    return {"message": "Inspection rejected", "comment": req.comment}
 
 
 @router.post("/{inspection_id}/photos")
